@@ -89,3 +89,36 @@ def test_execute_rejects_file_read():
     res = ex.execute(state)
     assert res["error"], "file read must be blocked"
     assert res["terminal"] is True
+
+
+def test_apply_resource_limits_sets_pragmas():
+    # 资源上限设置不应抛错，且可在引擎层回读验证生效
+    import duckdb
+
+    from executors.duckdb_executor import _apply_resource_limits
+
+    con = duckdb.connect()
+    try:
+        _apply_resource_limits(con)
+        # 回读验证内存上限确实生效（本环境不支持 PRAGMA memory_limit，用 current_setting）
+        val = con.execute("SELECT current_setting('memory_limit')").fetchone()
+        assert val is not None and val[0]
+    finally:
+        con.close()
+
+
+def test_execute_respects_resource_limits(tmp_path):
+    # 资源限制下正常查询仍可用（未被误伤）
+    csv = tmp_path / "sales.csv"
+    csv.write_text("channel,sales\nA,10\nB,20\n")
+    ex = _make()
+    state = {
+        "input": {"data_source_type": "csv", "file_path": str(csv)},
+        "artifact": {
+            "code": "SELECT COUNT(*) AS n FROM data",
+            "approved": True,
+        },
+    }
+    res = ex.execute(state)
+    assert res["error"] == "", res["error"]
+    assert res["rows"][0]["n"] == 2

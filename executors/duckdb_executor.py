@@ -1,4 +1,5 @@
 import json
+import os
 
 from analysis.summarize import summarize_result
 from core.sanitize import make_json_safe
@@ -18,6 +19,29 @@ def _disable_duckdb_external_access(con) -> None:
         try:
             con.execute(stmt)
             return
+        except Exception:
+            continue
+
+
+# 资源与隔离上限，可由环境变量覆盖（纵深防御：防 OOM / CPU 耗尽 / 长查询挂死）
+DUCKDB_MEMORY_LIMIT = os.environ.get("DUCKDB_MEMORY_LIMIT", "2GB")
+DUCKDB_THREADS = int(os.environ.get("DUCKDB_THREADS", "4"))
+DUCKDB_STATEMENT_TIMEOUT = os.environ.get("DUCKDB_STATEMENT_TIMEOUT", "30s")
+
+
+def _apply_resource_limits(con) -> None:
+    """建表前设置资源上限（内存/线程/语句超时），防止单条查询拖垮进程。
+
+    各项独立 try/except：不同 DuckDB 版本语法略有差异，失败项静默忽略。
+    """
+    settings = [
+        f"SET memory_limit='{DUCKDB_MEMORY_LIMIT}'",
+        f"SET threads={DUCKDB_THREADS}",
+        f"SET statement_timeout='{DUCKDB_STATEMENT_TIMEOUT}'",
+    ]
+    for stmt in settings:
+        try:
+            con.execute(stmt)
         except Exception:
             continue
 
@@ -108,6 +132,8 @@ class DuckDBExecutor(BaseExecutor):
 
         con = duckdb.connect()
         try:
+            # 先设资源上限（内存/线程/超时），再读文件，避免单条查询拖垮进程
+            _apply_resource_limits(con)
             # 路径转义后拼入：反斜杠改正斜杠（避免 SQL 字符串转义），单引号转义（防注入）。
             # 文件已落盘、路径由系统生成，不在 LLM 控制范围内。
             safe_path = file_path.replace("\\", "/").replace("'", "''")
