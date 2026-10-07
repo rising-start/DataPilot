@@ -7,7 +7,7 @@ exclude = ["text.py"]
 [lint]
 # 仅启用高价值规则：语法/未使用(E/F) + import 排序(I)
 # 暂不强制 E501(行长度) 与 UP(pyupgrade 风格)，避免大面积改写历史代码
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
 
 [lint.per-file-ignores]
@@ -15,3 +15,5 @@ ignore = ["E501"]
 "tests/test_smoke_import.py" = ["F401"]
 # 测试中常见运行期/条件 import，放宽 E402
 "tests/*" = ["E402"]
+# FastAPI 默认参数中的函数调用（Depends/Header 等）属预期用法，B008 误报
+"server/**" = ["B008"]
