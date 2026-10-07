@@ -9,6 +9,7 @@ function blankTask(taskId: string): TaskView {
     task_id: taskId,
     thread_id: '',
     status: 'running',
+    stage: '',
     tool: '',
     plan: {},
     approval: null,

@@ -16,6 +16,7 @@ class TaskView(BaseModel):
     task_id: str
     thread_id: str
     status: str = "running"  # running | awaiting_approval | completed | failed
+    stage: str = ""  # 后端执行阶段（load/plan/...），供前端展示中间进度
     tool: str = ""
     plan: dict = Field(default_factory=dict)
     approval: Optional[Approval] = None

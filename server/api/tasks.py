@@ -7,6 +7,7 @@ from typing import Callable
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
+from agent.progress import register_progress, unregister_progress
 from core.files import delete_temp_file
 from server.event_hub import HUB
 from server.files import UPLOADS
@@ -21,6 +22,13 @@ SERVICE = AnalysisService()
 EXECUTOR = ThreadPoolExecutor(max_workers=4)
 
 
+def _emit_stage(record: TaskRecord, stage: str) -> None:
+    """把后端执行阶段写回任务并推送 SSE（线程安全）。"""
+    record.stage = stage
+    STORE.set(record)
+    HUB.signal(record.task_id)
+
+
 def _to_view(record: TaskRecord) -> TaskView:
     result = record.result
     if result is None:
@@ -28,6 +36,7 @@ def _to_view(record: TaskRecord) -> TaskView:
             task_id=record.task_id,
             thread_id=record.thread_id,
             status=record.status,
+            stage=record.stage,
             error=record.error,
         )
 
@@ -57,7 +66,8 @@ def _to_view(record: TaskRecord) -> TaskView:
         logs=result.logs,
         memory=result.memory,
         error=result.error or record.error,
-    )
+        stage=record.stage,
+        )
 
 
 def _spawn(record: TaskRecord, call: Callable[[], RunResult]) -> None:
@@ -69,6 +79,8 @@ def _spawn(record: TaskRecord, call: Callable[[], RunResult]) -> None:
     epoch = record.epoch
 
     def run() -> None:
+        # 注册进度回调：节点凭 task_id 从注册表取出，上报当前执行阶段
+        register_progress(record.task_id, lambda s: _emit_stage(record, s))
         try:
             result = call()
             if result is None:
@@ -79,6 +91,10 @@ def _spawn(record: TaskRecord, call: Callable[[], RunResult]) -> None:
             record.error = str(e)
             # 清掉上一轮结果，避免失败状态带着陈旧的业务数据
             record.result = None
+        finally:
+            # 终态后清理回调，避免注册表随任务累积；awaiting_approval 时保留以等待 resume
+            if record.status in ("completed", "failed"):
+                unregister_progress(record.task_id)
 
         if STORE.get(record.task_id) is record and record.epoch == epoch:
             STORE.set(record)
@@ -128,6 +144,7 @@ def create_task(payload: CreateTaskRequest):
             payload.question,
             followup=payload.followup,
             memory=payload.memory,
+            task_id=record.task_id,
         ),
     )
     HUB.signal(task_id)
@@ -164,7 +181,12 @@ def resume_task(task_id: str, payload: ResumeRequest):
     STORE.set(record)
     HUB.signal(task_id)
 
-    _spawn(record, lambda: SERVICE.resume(thread_id, payload.approved))
+    _spawn(
+        record,
+        lambda: SERVICE.resume(
+            thread_id, payload.approved, task_id=record.task_id
+        ),
+    )
     return {"task_id": task_id, "status": "running"}
 
 
@@ -175,6 +197,8 @@ def delete_task(task_id: str):
         raise HTTPException(status_code=404, detail="task not found")
 
     STORE.delete(task_id)
+    # 清理可能残留的进度回调（终态通常会自行注销，这里双保险）
+    unregister_progress(task_id)
 
     # 没有其他任务（例如同一会话的上一轮）引用该文件时才真正删除临时文件
     still_used = any(

@@ -21,6 +21,7 @@ export interface TaskView {
   task_id: string
   thread_id: string
   status: TaskStatus
+  stage: string
   tool: string
   plan: Record<string, any>
   approval: Approval | null

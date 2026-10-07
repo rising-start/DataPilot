@@ -13,6 +13,8 @@ class TaskRecord:
     file_path: str = ""
     result: Optional[RunResult] = None
     error: str = ""
+    # 后端当前执行阶段（load/plan/generate/...），供 SSE 实时推送
+    stage: str = ""
     # 每次发起新的执行（建任务 / resume）递增；过期线程的写回据此丢弃
     epoch: int = 0
 

@@ -120,6 +120,7 @@ class AnalysisService:
         question: str,
         followup: bool = False,
         memory: Optional[dict] = None,
+        task_id: Optional[str] = None,
     ) -> RunResult:
         # 新一轮分析使用新 thread，避免复用上一轮 checkpoint 的状态
         thread_id = str(uuid.uuid4())
@@ -135,10 +136,22 @@ class AnalysisService:
         }
         if followup and memory:
             state["run"]["memory"] = memory
+        # task_id 写入状态（可序列化），节点据此从进度注册表取回调上报阶段
+        if task_id is not None:
+            state["run"]["task_id"] = task_id
 
         raw = self._graph.invoke(state, config=self._config(thread_id))
         return _to_result(thread_id, raw)
 
-    def resume(self, thread_id: str, approved: bool) -> RunResult:
-        raw = self._graph.invoke(Command(resume=approved), config=self._config(thread_id))
+    def resume(
+        self,
+        thread_id: str,
+        approved: bool,
+        task_id: Optional[str] = None,
+    ) -> RunResult:
+        cmd = Command(resume=approved)
+        if task_id is not None:
+            # task_id 重新注入（首次分析时已存入 checkpoint，这里兜底覆盖）
+            cmd = Command(resume=approved, update={"run": {"task_id": task_id}})
+        raw = self._graph.invoke(cmd, config=self._config(thread_id))
         return _to_result(thread_id, raw)

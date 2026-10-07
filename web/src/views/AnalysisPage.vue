@@ -14,7 +14,7 @@
       v-if="store.task?.status === 'running'"
       type="info"
       :closable="false"
-      title="正在分析，请稍候…"
+      :title="stageLabel"
     />
 
     <el-alert
@@ -57,6 +57,22 @@ const store = useTaskStore()
 const fileId = ref<string | null>(null)
 
 const busy = computed(() => store.task?.status === 'running')
+
+const STAGE_LABELS: Record<string, string> = {
+  load: '正在加载数据…',
+  plan: '正在制定分析方案…',
+  generate: '正在生成分析代码…',
+  approval: '等待审批…',
+  execute: '正在执行分析…',
+  repair: '正在修复代码…',
+  chart: '正在生成图表…',
+  report: '正在生成报告…',
+}
+
+const stageLabel = computed(() => {
+  const s = store.task?.stage
+  return (s && STAGE_LABELS[s]) || '正在分析，请稍候…'
+})
 
 function onUploaded(id: string) {
   fileId.value = id
