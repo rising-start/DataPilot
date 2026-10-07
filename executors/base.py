@@ -1,6 +1,6 @@
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 from analysis.summarize import summarize_result
 from core.config import CODE_APPROVAL_ENABLED, CODE_EXEC_TIMEOUT
@@ -33,14 +33,14 @@ class BaseExecutor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def generate(self, state: dict) -> Dict[str, Any]:
+    def generate(self, state: dict) -> dict[str, Any]:
         """返回 {"code": str, "error": str}（可选 terminal）。"""
         raise NotImplementedError
 
     def needs_approval(self, state: dict) -> bool:
         return CODE_APPROVAL_ENABLED
 
-    def get_approval_payload(self, state: dict) -> Dict[str, Any]:
+    def get_approval_payload(self, state: dict) -> dict[str, Any]:
         artifact = state.get("artifact", {}) or {}
         content = artifact.get("code", "") or ""
         return {
@@ -51,11 +51,11 @@ class BaseExecutor(ABC):
             "message": f"Approve this {self.name} artifact before execution?",
         }
 
-    def repair(self, state: dict) -> Dict[str, Any]:
+    def repair(self, state: dict) -> dict[str, Any]:
         return {"error": f"{self.name} executor does not support repair.", "terminal": True}
 
     @abstractmethod
-    def execute(self, state: dict) -> Dict[str, Any]:
+    def execute(self, state: dict) -> dict[str, Any]:
         """返回 {"rows": list, "summary": dict, "error": str, "terminal": bool}。"""
         raise NotImplementedError
 
@@ -67,27 +67,27 @@ class CodeExecutor(BaseExecutor):
     def load_frame(self, state: dict):
         raise NotImplementedError
 
-    def extra_runtime_vars(self) -> Dict[str, Any]:
+    def extra_runtime_vars(self) -> dict[str, Any]:
         return {}
 
     def supports(self, state: dict) -> bool:
         return _input(state).get("data_source_type") in {"csv", "excel"}
 
-    def build_payload(self, state: dict) -> Dict[str, Any]:
+    def build_payload(self, state: dict) -> dict[str, Any]:
         return {
             "question": _input(state).get("user_question", ""),
             "schema_info": build_schema_summary_for_llm(state),
             "analysis_plan": (state.get("plan", {}) or {}).get("analysis_plan", {}),
         }
 
-    def generate(self, state: dict) -> Dict[str, Any]:
+    def generate(self, state: dict) -> dict[str, Any]:
         code = invoke_text(
             self.generator_prompt,
             json.dumps(self.build_payload(state), ensure_ascii=False),
         )
         return {"code": clean_code(code), "kind": self.artifact_kind, "error": ""}
 
-    def repair(self, state: dict) -> Dict[str, Any]:
+    def repair(self, state: dict) -> dict[str, Any]:
         payload = self.build_payload(state)
         artifact = state.get("artifact", {}) or {}
         payload["bad_code"] = artifact.get("code", "")
@@ -102,7 +102,7 @@ class CodeExecutor(BaseExecutor):
             "retry_count": (state.get("execution", {}) or {}).get("retry_count", 0) + 1,
         }
 
-    def execute(self, state: dict) -> Dict[str, Any]:
+    def execute(self, state: dict) -> dict[str, Any]:
         artifact = state.get("artifact", {}) or {}
         # 需要审批但被拒绝 = 终止性错误，不能继续 exec（与 SQL 执行器行为一致）
         if artifact.get("approval_required", False) and not artifact.get("approved", False):

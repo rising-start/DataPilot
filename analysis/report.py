@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -15,10 +15,10 @@ def _fmt_value(v: Any) -> str:
 
 def build_report(
     user_question: str,
-    analysis_plan: Dict[str, Any],
+    analysis_plan: dict[str, Any],
     result_df: pd.DataFrame,
-) -> tuple[List[str], str]:
-    insights: List[str] = []
+) -> tuple[list[str], str]:
+    insights: list[str] = []
 
     if len(result_df) == 0:
         insights.append("查询结果为空，当前筛选条件下没有可用数据。")

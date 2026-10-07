@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from agent.state import AgentState
 from agent.support.tracing import run_update
@@ -6,7 +6,7 @@ from core.sanitize import make_json_safe
 from executors.registry import get_executor
 
 
-def _artifact_result(state: AgentState, executor, result: dict, stage: str) -> Dict[str, Any]:
+def _artifact_result(state: AgentState, executor, result: dict, stage: str) -> dict[str, Any]:
     """把 executor 返回的产物字段包进 artifact 分组，并补充审批信息。"""
     artifact = dict(state.get("artifact", {}))
     artifact.update({k: v for k, v in result.items() if k in {"code", "kind"}})
@@ -16,7 +16,7 @@ def _artifact_result(state: AgentState, executor, result: dict, stage: str) -> D
     artifact["approval_required"] = need_approval
     artifact["approval_payload"] = executor.get_approval_payload(merged_state) if need_approval else {}
 
-    update: Dict[str, Any] = {"artifact": artifact}
+    update: dict[str, Any] = {"artifact": artifact}
 
     # retry_count 必须落在 execution 分组：路由在 after_execute_artifact 里读它，
     # 放进 run 分组会导致计数永远不递增，修复循环无法终止

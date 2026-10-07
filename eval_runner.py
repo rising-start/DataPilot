@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -9,7 +9,7 @@ from service import AnalysisService, RunResult
 # =========================
 # 1. 测试集
 # =========================
-TEST_CASES: List[Dict[str, Any]] = [
+TEST_CASES: list[dict[str, Any]] = [
     {
         "case_id": 1,
         "question": "最近三个月各地区销售额对比，请给我图表和结论。",
@@ -70,7 +70,7 @@ def run_turn(
     source_type: str,
     question: str,
     followup: bool = False,
-    memory: Optional[dict] = None,
+    memory: dict | None = None,
     max_resumes: int = 3,
 ) -> RunResult:
     """评估环境自动批准审批中断，跑到没有待审批为止。"""
@@ -84,7 +84,7 @@ def run_turn(
     return result
 
 
-def summarize_result(case: Dict[str, Any], result: RunResult) -> Dict[str, Any]:
+def summarize_result(case: dict[str, Any], result: RunResult) -> dict[str, Any]:
     error = result.error or ""
     final_report = str(result.report or "")
 
@@ -110,7 +110,7 @@ def summarize_result(case: Dict[str, Any], result: RunResult) -> Dict[str, Any]:
     }
 
 
-def _failure_record(case: Dict[str, Any], error: str) -> Dict[str, Any]:
+def _failure_record(case: dict[str, Any], error: str) -> dict[str, Any]:
     return {
         "case_id": case["case_id"],
         "question": case.get("question", ""),
@@ -136,8 +136,8 @@ def _failure_record(case: Dict[str, Any], error: str) -> Dict[str, Any]:
 # =========================
 # 3. 单轮评估
 # =========================
-def run_single_turn_eval(service: AnalysisService, cases: List[Dict[str, Any]]) -> pd.DataFrame:
-    records: List[Dict[str, Any]] = []
+def run_single_turn_eval(service: AnalysisService, cases: list[dict[str, Any]]) -> pd.DataFrame:
+    records: list[dict[str, Any]] = []
 
     for case in cases:
         try:
@@ -171,15 +171,15 @@ MULTI_TURN_CASES = [
 ]
 
 
-def run_multi_turn_eval(service: AnalysisService, cases: List[Dict[str, Any]]) -> pd.DataFrame:
-    records: List[Dict[str, Any]] = []
+def run_multi_turn_eval(service: AnalysisService, cases: list[dict[str, Any]]) -> pd.DataFrame:
+    records: list[dict[str, Any]] = []
 
     for case in cases:
         try:
             file_path = resolve_data_file(case["data_file"])
             source_type = detect_source_type(file_path)
 
-            result: Optional[RunResult] = None
+            result: RunResult | None = None
 
             for idx, turn in enumerate(case["turns"], start=1):
                 result = run_turn(

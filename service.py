@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langgraph.types import Command
 
@@ -24,22 +24,22 @@ class RunResult:
     thread_id: str
     status: str  # completed | awaiting_approval | failed
     tool: str = ""
-    plan: Dict[str, Any] = field(default_factory=dict)
-    pending: Optional[PendingApproval] = None
+    plan: dict[str, Any] = field(default_factory=dict)
+    pending: PendingApproval | None = None
     artifact_kind: str = ""
     artifact_code: str = ""
-    rows: List[Dict[str, Any]] = field(default_factory=list)
-    chart_spec: Dict[str, Any] = field(default_factory=dict)
+    rows: list[dict[str, Any]] = field(default_factory=list)
+    chart_spec: dict[str, Any] = field(default_factory=dict)
     chart_ready: bool = False
-    insights: List[str] = field(default_factory=list)
+    insights: list[str] = field(default_factory=list)
     report: str = ""
-    trace: List[Dict[str, Any]] = field(default_factory=list)
-    logs: List[str] = field(default_factory=list)
-    memory: Dict[str, Any] = field(default_factory=dict)
+    trace: list[dict[str, Any]] = field(default_factory=list)
+    logs: list[str] = field(default_factory=list)
+    memory: dict[str, Any] = field(default_factory=dict)
     error: str = ""
 
 
-def _empty_groups() -> Dict[str, Any]:
+def _empty_groups() -> dict[str, Any]:
     return {
         "artifact": {
             "kind": "",
@@ -59,7 +59,7 @@ def _empty_groups() -> Dict[str, Any]:
     }
 
 
-def _to_result(thread_id: str, raw: Dict[str, Any]) -> RunResult:
+def _to_result(thread_id: str, raw: dict[str, Any]) -> RunResult:
     plan = raw.get("plan", {}) or {}
     artifact = raw.get("artifact", {}) or {}
     execution = raw.get("execution", {}) or {}
@@ -119,12 +119,12 @@ class AnalysisService:
         source_type: str,
         question: str,
         followup: bool = False,
-        memory: Optional[dict] = None,
-        task_id: Optional[str] = None,
+        memory: dict | None = None,
+        task_id: str | None = None,
     ) -> RunResult:
         # 新一轮分析使用新 thread，避免复用上一轮 checkpoint 的状态
         thread_id = str(uuid.uuid4())
-        state: Dict[str, Any] = {
+        state: dict[str, Any] = {
             "input": {
                 "thread_id": thread_id,
                 "user_question": question,
@@ -147,7 +147,7 @@ class AnalysisService:
         self,
         thread_id: str,
         approved: bool,
-        task_id: Optional[str] = None,
+        task_id: str | None = None,
     ) -> RunResult:
         cmd = Command(resume=approved)
         if task_id is not None:

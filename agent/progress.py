@@ -5,10 +5,10 @@
 调用 `report_progress(state, stage)`，再由本模块凭 task_id 从注册表取出
 回调并调用。回调（函数）不进入 checkpoint，避免 LangGraph 序列化失败。
 """
-from typing import Callable, Dict
+from collections.abc import Callable
 
 # task_id -> 进度回调（运行时注册，进程内有效；任务终态后清理）
-_REGISTRY: Dict[str, Callable[[str], None]] = {}
+_REGISTRY: dict[str, Callable[[str], None]] = {}
 
 
 def register_progress(task_id: str, cb: Callable[[str], None]) -> None:

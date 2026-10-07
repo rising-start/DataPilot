@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 from core.files import delete_temp_file, detect_source_type, save_upload_to_temp
 
@@ -20,7 +19,7 @@ class UploadStore:
     """
 
     def __init__(self) -> None:
-        self._files: Dict[str, UploadedFile] = {}
+        self._files: dict[str, UploadedFile] = {}
 
     def save(self, file_id: str, filename: str, data: bytes) -> UploadedFile:
         path = save_upload_to_temp(filename, data)
@@ -33,7 +32,7 @@ class UploadStore:
         self._files[file_id] = uploaded
         return uploaded
 
-    def get(self, file_id: str) -> Optional[UploadedFile]:
+    def get(self, file_id: str) -> UploadedFile | None:
         return self._files.get(file_id)
 
     def delete(self, file_id: str) -> None:

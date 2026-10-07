@@ -1,9 +1,9 @@
 import json
 import re
-from typing import Any, Dict
+from typing import Any
 
 
-def extract_json_object(text: str) -> Dict[str, Any]:
+def extract_json_object(text: str) -> dict[str, Any]:
     """从 LLM 输出中提取 JSON 对象，所有分支都做兜底，保证返回 dict。"""
     text = (text or "").strip()
 

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict, List
-
 from executors.base import BaseExecutor
 
-_EXECUTOR_REGISTRY: Dict[str, BaseExecutor] = {}
+_EXECUTOR_REGISTRY: dict[str, BaseExecutor] = {}
 
 
 def register_executor(executor: BaseExecutor) -> None:
@@ -17,5 +15,5 @@ def get_executor(name: str) -> BaseExecutor:
     return _EXECUTOR_REGISTRY[name]
 
 
-def list_executors() -> List[str]:
+def list_executors() -> list[str]:
     return list(_EXECUTOR_REGISTRY.keys())

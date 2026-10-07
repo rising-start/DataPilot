@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -39,7 +39,7 @@ TRANSIENT_DIMENSION_KEYWORDS = (
 )
 
 
-def pick_dimension_column(result_df: pd.DataFrame, analysis_plan: Dict[str, Any]) -> Optional[str]:
+def pick_dimension_column(result_df: pd.DataFrame, analysis_plan: dict[str, Any]) -> str | None:
     """优先用分析计划指定的维度，其次非数值列。"""
     for dim in analysis_plan.get("dimensions", []) or []:
         if dim in result_df.columns:
@@ -55,7 +55,7 @@ def pick_dimension_column(result_df: pd.DataFrame, analysis_plan: Dict[str, Any]
     return None
 
 
-def pick_metric_column(result_df: pd.DataFrame, analysis_plan: Dict[str, Any]) -> Optional[str]:
+def pick_metric_column(result_df: pd.DataFrame, analysis_plan: dict[str, Any]) -> str | None:
     """优先常见高价值指标，其次计划指定指标，最后数值列兜底。"""
     numeric_cols = result_df.select_dtypes(include="number").columns.tolist()
     if not numeric_cols:
@@ -76,7 +76,7 @@ def pick_metric_column(result_df: pd.DataFrame, analysis_plan: Dict[str, Any]) -
     return numeric_cols[0]
 
 
-def is_stable_focus_dimension(dim_col: Optional[str]) -> bool:
+def is_stable_focus_dimension(dim_col: str | None) -> bool:
     """判断维度是否适合作为跨轮持续关注的实体。"""
     if not dim_col:
         return False

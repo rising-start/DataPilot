@@ -1,11 +1,11 @@
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
 from core.columns import pick_dimension_column, pick_metric_column
 
 
-def build_chart_spec(result_df: pd.DataFrame, analysis_plan: Dict[str, Any]) -> Dict[str, Any]:
+def build_chart_spec(result_df: pd.DataFrame, analysis_plan: dict[str, Any]) -> dict[str, Any]:
     """生成图表规格（v1）。
 
     返回结构：

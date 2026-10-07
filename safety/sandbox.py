@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import ast
 import re
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
 from core.config import MAX_RESULT_ROWS
 
-_ALLOWED_BUILTINS: Dict[str, Any] = {
+_ALLOWED_BUILTINS: dict[str, Any] = {
     "abs": abs,
     "all": all,
     "any": any,
@@ -164,9 +164,9 @@ def validate_code(code: str) -> None:
                 raise ValueError(f"生成代码不允许进行文件/网络 IO：{func.attr}()。")
 
 
-def build_safe_globals(extra: Dict[str, Any] | None = None) -> Dict[str, Any]:
+def build_safe_globals(extra: dict[str, Any] | None = None) -> dict[str, Any]:
     """每次执行都新建一份 globals，避免跨请求污染。"""
-    namespace: Dict[str, Any] = {"__builtins__": dict(_ALLOWED_BUILTINS)}
+    namespace: dict[str, Any] = {"__builtins__": dict(_ALLOWED_BUILTINS)}
     if extra:
         namespace.update(extra)
     return namespace
@@ -199,7 +199,7 @@ class SandboxExecError(RuntimeError):
     """运行期执行错误 / 超时 / 子进程崩溃：可重试。"""
 
 
-def _execute_code_impl(code: str, variables: Dict[str, Any] | None = None) -> pd.DataFrame:
+def _execute_code_impl(code: str, variables: dict[str, Any] | None = None) -> pd.DataFrame:
     """清洗 -> 静态校验 -> 受限执行 -> 归一化（不含进程边界）。
 
     静态校验失败抛 SandboxValidationError（terminal）；
@@ -223,15 +223,15 @@ def _execute_code_impl(code: str, variables: Dict[str, Any] | None = None) -> pd
     return normalize_result(namespace.get("result_df"))
 
 
-def run_generated_code(code: str, variables: Dict[str, Any] | None = None) -> pd.DataFrame:
+def run_generated_code(code: str, variables: dict[str, Any] | None = None) -> pd.DataFrame:
     """进程内执行（保留供现有单测与遗留调用）。"""
     return _execute_code_impl(code, variables)
 
 
-def _read_err_path(err_path: str) -> Dict[str, Any]:
+def _read_err_path(err_path: str) -> dict[str, Any]:
     import json
     try:
-        with open(err_path, "r", encoding="utf-8") as f:
+        with open(err_path, encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {"error": "子进程异常退出（无错误详情）", "terminal": False}
@@ -243,7 +243,7 @@ def run_generated_code_subprocess(
     source_type: str,
     executor_name: str,
     timeout: float,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """在独立子进程中执行生成的代码，返回截断后的 DataFrame。
 
     成功 -> 返回 DataFrame；

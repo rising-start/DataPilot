@@ -74,6 +74,6 @@ def run(req: dict, res_path: str, err_path: str) -> int:
 
 if __name__ == "__main__":
     req_path, res_path, err_path = sys.argv[1], sys.argv[2], sys.argv[3]
-    with open(req_path, "r", encoding="utf-8") as f:
+    with open(req_path, encoding="utf-8") as f:
         req = json.load(f)
     sys.exit(run(req, res_path, err_path))

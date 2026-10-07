@@ -1,12 +1,12 @@
-from typing import Annotated, Any, Dict, List, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
 
-def merge_group(old: Dict[str, Any] | None, new: Dict[str, Any] | None) -> Dict[str, Any]:
+def merge_group(old: dict[str, Any] | None, new: dict[str, Any] | None) -> dict[str, Any]:
     """普通分组：浅合并，节点未返回的字段保留。"""
     return {**(old or {}), **(new or {})}
 
 
-def merge_run(old: Dict[str, Any] | None, new: Dict[str, Any] | None) -> Dict[str, Any]:
+def merge_run(old: dict[str, Any] | None, new: dict[str, Any] | None) -> dict[str, Any]:
     """RunState：浅合并，且 error 只要本次未显式设置就归零。
 
     注意：LangGraph 只在节点返回了该分组时才调用 reducer，
@@ -24,9 +24,9 @@ ChartType = Literal["line", "bar", "pie", "hist", "none"]
 
 class AnalysisPlan(TypedDict, total=False):
     goal: str
-    metrics: List[str]
-    dimensions: List[str]
-    filters: Dict[str, Any]
+    metrics: list[str]
+    dimensions: list[str]
+    filters: dict[str, Any]
     time_range: str
     tool: str
     needs_chart: bool
@@ -43,9 +43,9 @@ class InputState(TypedDict, total=False):
 
 
 class DatasetState(TypedDict, total=False):
-    dataset_profile: Dict[str, Any]
-    schema_info: Dict[str, Any]
-    sample_rows: List[Dict[str, Any]]
+    dataset_profile: dict[str, Any]
+    schema_info: dict[str, Any]
+    sample_rows: list[dict[str, Any]]
 
 
 class PlanState(TypedDict, total=False):
@@ -59,28 +59,28 @@ class ArtifactState(TypedDict, total=False):
     code: str
     approval_required: bool
     approved: bool
-    approval_payload: Dict[str, Any]
+    approval_payload: dict[str, Any]
 
 
 class ExecutionState(TypedDict, total=False):
-    rows: List[Dict[str, Any]]
-    summary: Dict[str, Any]
+    rows: list[dict[str, Any]]
+    summary: dict[str, Any]
     retry_count: int
     max_retries: int
 
 
 class OutputState(TypedDict, total=False):
-    chart_spec: Dict[str, Any]
+    chart_spec: dict[str, Any]
     chart_ready: bool
-    insights: List[str]
+    insights: list[str]
     report: str
 
 
 class RunState(TypedDict, total=False):
-    run_logs: List[str]
-    trace: List[Dict[str, Any]]
-    memory: Dict[str, Any]
-    prior_questions: List[str]
+    run_logs: list[str]
+    trace: list[dict[str, Any]]
+    memory: dict[str, Any]
+    prior_questions: list[str]
     error: str
     last_error_stage: str
     terminal: bool

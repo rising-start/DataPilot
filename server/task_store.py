@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 from service import RunResult
 
@@ -11,7 +10,7 @@ class TaskRecord:
     file_id: str = ""
     status: str = "running"
     file_path: str = ""
-    result: Optional[RunResult] = None
+    result: RunResult | None = None
     error: str = ""
     # 后端当前执行阶段（load/plan/generate/...），供 SSE 实时推送
     stage: str = ""
@@ -33,9 +32,9 @@ class InMemoryTaskStore:
     """
 
     def __init__(self) -> None:
-        self._records: Dict[str, TaskRecord] = {}
+        self._records: dict[str, TaskRecord] = {}
 
-    def get(self, task_id: str) -> Optional[TaskRecord]:
+    def get(self, task_id: str) -> TaskRecord | None:
         return self._records.get(task_id)
 
     def set(self, record: TaskRecord) -> None:
@@ -44,5 +43,5 @@ class InMemoryTaskStore:
     def delete(self, task_id: str) -> None:
         self._records.pop(task_id, None)
 
-    def list(self) -> List[TaskRecord]:
+    def list(self) -> list[TaskRecord]:
         return list(self._records.values())

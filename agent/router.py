@@ -1,17 +1,17 @@
-from typing import Any, Dict
+from typing import Any
 
 from core.config import DASK_ROW_THRESHOLD
 from executors.registry import get_executor
 
 
-def _executor_supports(tool: str, state: Dict[str, Any]) -> bool:
+def _executor_supports(tool: str, state: dict[str, Any]) -> bool:
     try:
         return get_executor(tool).supports(state)
     except Exception:
         return False
 
 
-def choose_tool(data_source_type: str, analysis_plan: Dict[str, Any], state: Dict[str, Any]) -> str:
+def choose_tool(data_source_type: str, analysis_plan: dict[str, Any], state: dict[str, Any]) -> str:
     """
     统一工具选择逻辑：
     1. 先看数据源硬约束

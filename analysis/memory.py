@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
@@ -12,9 +12,9 @@ from core.sanitize import make_json_safe
 
 def extract_memory_from_result(
     user_question: str,
-    analysis_plan: Dict[str, Any],
+    analysis_plan: dict[str, Any],
     result_df: pd.DataFrame,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     if result_df is None or len(result_df) == 0:
         return {
             "focus_entities": {},
@@ -44,7 +44,7 @@ def extract_memory_from_result(
             top_value = None
             top_k = []
 
-    memory: Dict[str, Any] = {
+    memory: dict[str, Any] = {
         "focus_entities": {},
         "last_result": {
             "question": user_question,

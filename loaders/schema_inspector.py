@@ -1,9 +1,9 @@
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
 
-def inspect_dataframe(df: pd.DataFrame) -> Dict[str, Any]:
+def inspect_dataframe(df: pd.DataFrame) -> dict[str, Any]:
     return {
         "row_count": int(len(df)),
         "column_count": int(len(df.columns)),

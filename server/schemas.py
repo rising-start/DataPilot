@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,15 +18,15 @@ class TaskView(BaseModel):
     stage: str = ""  # 后端执行阶段（load/plan/...），供前端展示中间进度
     tool: str = ""
     plan: dict = Field(default_factory=dict)
-    approval: Optional[Approval] = None
+    approval: Approval | None = None
     artifact_kind: str = ""
     artifact_code: str = ""
-    rows: List[dict] = Field(default_factory=list)
+    rows: list[dict] = Field(default_factory=list)
     chart_spec: dict = Field(default_factory=dict)
-    insights: List[str] = Field(default_factory=list)
+    insights: list[str] = Field(default_factory=list)
     report: str = ""
-    trace: List[dict] = Field(default_factory=list)
-    logs: List[str] = Field(default_factory=list)
+    trace: list[dict] = Field(default_factory=list)
+    logs: list[str] = Field(default_factory=list)
     memory: dict = Field(default_factory=dict)
     error: str = ""
 
@@ -36,7 +35,7 @@ class CreateTaskRequest(BaseModel):
     file_id: str
     question: str
     followup: bool = False
-    memory: Optional[dict] = None
+    memory: dict | None = None
 
 
 class ResumeRequest(BaseModel):

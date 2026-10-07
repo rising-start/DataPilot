@@ -4,7 +4,6 @@ import random
 import re
 import time
 from functools import lru_cache
-from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -53,7 +52,7 @@ _RETRY_AFTER_RE = re.compile(
 )
 
 
-def _status_code(exc: BaseException) -> Optional[int]:
+def _status_code(exc: BaseException) -> int | None:
     for obj in (exc, getattr(exc, "response", None)):
         code = getattr(obj, "status_code", None) or getattr(obj, "http_status", None)
         if isinstance(code, int):
@@ -61,7 +60,7 @@ def _status_code(exc: BaseException) -> Optional[int]:
     return None
 
 
-def _suggested_delay(exc: BaseException) -> Optional[float]:
+def _suggested_delay(exc: BaseException) -> float | None:
     """从 Retry-After 头或错误文案里提取服务端建议的等待秒数。"""
     headers = getattr(getattr(exc, "response", None), "headers", None)
     if headers and hasattr(headers, "get"):
@@ -106,8 +105,8 @@ def _backoff_delay(exc: BaseException, attempt: int) -> float:
     return min(delay, LLM_RETRY_MAX_DELAY) + random.uniform(0, 0.5)
 
 
-def _invoke_with_retry(messages: List[Dict[str, str]]) -> str:
-    last_error: Optional[BaseException] = None
+def _invoke_with_retry(messages: list[dict[str, str]]) -> str:
+    last_error: BaseException | None = None
 
     for attempt in range(LLM_MAX_RETRIES + 1):
         try:

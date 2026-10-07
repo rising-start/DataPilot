@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 
 from agent.state import AnalysisPlan
 
@@ -10,7 +10,7 @@ def _as_str(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
-def _as_str_list(value: Any) -> List[str]:
+def _as_str_list(value: Any) -> list[str]:
     # 只接受列表类输入；非列表（含裸字符串）直接视为空，避免把脏数据当维度/指标
     if not isinstance(value, (list, tuple)):
         return []

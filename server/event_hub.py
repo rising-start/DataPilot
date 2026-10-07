@@ -5,13 +5,12 @@
 + `loop.call_soon_threadsafe` 桥接，避免跨线程直接操作异步原语。
 """
 import asyncio
-from typing import Dict, Set
 
 
 class EventHub:
     def __init__(self) -> None:
         # task_id -> 该任务的订阅者事件集合（通常一个 SSE 连接对应一个）
-        self._events: Dict[str, Set[asyncio.Event]] = {}
+        self._events: dict[str, set[asyncio.Event]] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
 
     def attach_loop(self, loop: asyncio.AbstractEventLoop) -> None:

@@ -1,11 +1,11 @@
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
 from core.sanitize import make_json_safe
 
 
-def summarize_result(result_df: pd.DataFrame) -> Dict[str, Any]:
+def summarize_result(result_df: pd.DataFrame) -> dict[str, Any]:
     summary = {
         "row_count": int(len(result_df)),
         "column_count": int(len(result_df.columns)),
