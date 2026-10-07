@@ -206,6 +206,8 @@ state["run"]["error"] / ["trace"] / ["run_logs"] / ["memory"] / ["terminal"]
 
 **`TaskView` 字段**：
 
+> 字段以后端 `server/schemas.py` 的 `TaskView` 为单一真源；前端 `web/src/types.ts` 须与之逐一对应，由 `tests/test_taskview_contract.py` 校验，防 schema 漂移。
+
 ```jsonc
 {
   "task_id": "...", "thread_id": "...",
