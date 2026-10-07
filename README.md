@@ -70,6 +70,9 @@ docker compose down             # 停止
 | `CODE_EXEC_TIMEOUT` | 子进程执行代码的超时秒数，超时强制 kill | `30.0` |
 | `CODE_EXEC_MEM_LIMIT_MB` | 子进程虚拟内存上限（MB），仅 Linux 生效 | `1024` |
 | `CODE_EXEC_CPU_TIME` | 子进程 CPU 时间上限（秒），仅 Linux 生效 | `30` |
+| `DUCKDB_MEMORY_LIMIT` | DuckDB 单连接内存上限，防大查询 OOM | `2GB` |
+| `DUCKDB_THREADS` | DuckDB 单连接并发线程数，防 CPU 耗尽 | `4` |
+| `DUCKDB_STATEMENT_TIMEOUT` | DuckDB 单语句超时，防长查询挂死 | `30s` |
 
 `.env.example` 提供了模板。
 
@@ -273,7 +276,7 @@ curl -s -X POST http://localhost:8000/api/tasks/$TASK_ID/resume \
 
 交互与状态处理（`src/stores/task.ts`）：
 
-- 提交任务后通过 `EventSource` 订阅 `GET /api/tasks/{id}/events`，收到 `update` 事件即刷新视图，终态或 `gone` 事件时关闭流。
+- 提交任务后通过 `EventSource` 订阅 `GET /api/tasks/{id}/events`，收到 `update` 事件即刷新视图（含执行阶段 `stage`，如规划中/生成 SQL/执行中，实时展示当前步骤），终态或 `gone` 事件时关闭流。
 - SSE 收到 `gone`（进程重启导致任务丢失）→ 停止并提示"会话已失效"；`onerror` 断线时停止并提示。
 - 提交新一轮时重置为空白 `TaskView`，不残留上一轮的 `trace` / `approval`。
 - **审批弹窗不可通过遮罩 / ESC / 右上角关闭**——它是 `awaiting_approval` 状态唯一的恢复入口，误关会让任务永久挂起。
@@ -291,6 +294,7 @@ curl -s -X POST http://localhost:8000/api/tasks/$TASK_ID/resume \
 |---|---|
 | SQLite | 强制 SQL |
 | CSV / Excel | 行数 ≥ `DASK_ROW_THRESHOLD` 且 dask 可用 → dask；否则按 planner 建议（`pandas`/`dask`）；兜底 pandas |
+| CSV（且 planner 选 `duckdb`） | DuckDB 引擎（SQL 类，仅 CSV；未安装时 `init_executors()` 跳过注册，回落 pandas） |
 | 未知类型 | `none` → 计划节点直接判失败 |
 
 **引擎契约**：
@@ -343,11 +347,12 @@ execute(state)  -> {"rows": list, "summary": dict, "error": str, "terminal": boo
 **资源限制**：Linux 下子进程用 `resource.setrlimit` 限制虚拟内存（`RLIMIT_AS`）与 CPU 时间（`RLIMIT_CPU`）；
 Windows 无 `resource` 模块，自动退化为仅超时保护。默认超时 30s，可由 `CODE_EXEC_TIMEOUT` 配置。
 
-**SQL**（`safety/sql_guard.py` + 连接层）：
+**SQL**（SQLite / DuckDB，`safety/sql_guard.py` + 连接层）：
 
 - 只允许 `SELECT` / `WITH ... SELECT`；禁止 `insert/update/delete/drop/alter/truncate` 等关键字；
 - SQLite 一律以**只读 URI**（`file://...?mode=ro`）打开，并显式关闭连接；
-- 生成的 SQL 还需通过人工审批。
+- DuckDB 在父进程内执行：先物化内存表 `data`，再 `SET enable_external_access=false` 锁死引擎级外部文件访问（即便 `sql_guard` 漏网也读不到别的文件），并通过 `DUCKDB_MEMORY_LIMIT` / `DUCKDB_THREADS` / `DUCKDB_STATEMENT_TIMEOUT` 限制内存、线程与语句超时，防 OOM / CPU 耗尽 / 长查询挂死；
+- SQL 类（SQLite、DuckDB）生成后均需人工审批；被拒即终止。
 
 **审批**：默认 `CODE_APPROVAL_ENABLED=true`，代码与 SQL 都要人工批准后才执行；
 被拒绝即终止，不会重新生成再申请。设 `CODE_APPROVAL_ENABLED=false` 可关闭（不推荐）。
@@ -359,15 +364,15 @@ Windows 无 `resource` 模块，自动退化为仅超时保护。默认超时 30
 ## 10. 测试
 
 ```powershell
-python -m pytest tests -q          # 后端，96 条，不联网
+python -m pytest tests -q          # 后端，117 条，不联网
 cd web; npm run test               # 前端 Vitest，23 条（ECharts 映射 4 + 图表列候选 19）
 cd web; npm run typecheck          # vue-tsc 类型检查
 cd web; npm run build              # 构建
 ```
 
 后端测试覆盖：沙箱拦截（6 类恶意代码）、SQL 校验、JSON 解析兜底、plan 校验、
-列/指标选择、报告与 memory、`chart_spec` v1、任务存储、以及 API 的
-成功 / 待审批 / 批准 / 拒绝终止 / 404 / 409 / 501 / service 抛错 等路径。
+列/指标选择、报告与 memory、`chart_spec` v1、任务存储、SSE 完整流（订阅/推送/终态关流）、
+以及 API 的 成功 / 待审批 / 批准 / 拒绝终止 / 404 / 409 / 501 / service 抛错 等路径。
 API 测试用 `FakeExecutor` 与 monkeypatch 拦截 LLM，**不发真实网络请求**。
 
 ---
