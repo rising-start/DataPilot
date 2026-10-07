@@ -1,0 +1,19 @@
+services:
+  datapilot:
+    build: .
+    image: datapilot:latest
+    container_name: datapilot
+    ports:
+      - "8000:8000"
+    # 只填本项目需要的变量；不要把 .env 提交进仓库
+    env_file:
+      - .env
+    environment:
+      CODE_APPROVAL_ENABLED: "true"
+      DASK_ROW_THRESHOLD: "50000"
+      MAX_RESULT_ROWS: "200"
+      DEFAULT_MAX_RETRIES: "1"
+    restart: unless-stopped
+    # 单副本：checkpoint 是 InMemorySaver，多副本之间不共享会话状态
+    deploy:
+      replicas: 1

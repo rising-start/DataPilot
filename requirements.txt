@@ -1,0 +1,12 @@
+langgraph
+langchain-core
+langchain-openai
+pandas
+numpy
+dask[dataframe]
+duckdb
+openpyxl
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv

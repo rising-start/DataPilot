@@ -1,0 +1,17 @@
+line-length = 100
+target-version = "py311"
+
+# 一次性脚本，非运行时/测试代码，不参与 lint
+exclude = ["text.py"]
+
+[lint]
+# 仅启用高价值规则：语法/未使用(E/F) + import 排序(I)
+# 暂不强制 E501(行长度) 与 UP(pyupgrade 风格)，避免大面积改写历史代码
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+# 该测试以“成功 import 模块”本身为断言目标，未使用的 import 是有意的
+"tests/test_smoke_import.py" = ["F401"]
+# 测试中常见运行期/条件 import，放宽 E402
+"tests/*" = ["E402"]

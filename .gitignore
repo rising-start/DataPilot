@@ -1,0 +1,27 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Python envs
+.venv/
+venv/
+
+# Secrets / local config
+.env
+
+# IDE
+.idea/
+*.iml
+
+# Frontend
+node_modules/
+dist/
+
+# Ad-hoc scripts & generated artifacts
+text.py
+eval_*.csv
+sales_60k_demo.csv
+
+# OS
+.DS_Store

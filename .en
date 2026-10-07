@@ -1,0 +1,11 @@
+# 复制为 .env 后填写真实值；.env 已被 .gitignore / .dockerignore 排除
+KIMI_API_KEY=
+KIMI_BASE_URL=https://api.moonshot.cn/v1
+KIMI_MODEL=kimi-k2-0905-preview
+
+# 可选调参
+# CODE_APPROVAL_ENABLED=true
+# DASK_ROW_THRESHOLD=50000
+# MAX_RESULT_ROWS=200
+# DEFAULT_MAX_RETRIES=1
+# MAX_FOCUS_ENTITIES=5

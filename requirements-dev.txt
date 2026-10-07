@@ -1,0 +1,4 @@
+# 开发 / 测试 / CI 依赖（运行时依赖见 requirements.txt）
+pytest
+httpx
+ruff
