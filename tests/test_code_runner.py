@@ -1,3 +1,4 @@
+import io
 import pytest
 
 from safety import code_runner
@@ -39,16 +40,28 @@ from safety.sandbox import (
 
 
 class _FakeProc:
-    def __init__(self, returncode):
+    def __init__(self, returncode=1, stderr=b"", hang=False):
         self.returncode = returncode
-        self.stderr = b""
+        self.stderr = io.BytesIO(stderr)  # Popen.stderr 是管道文件对象，需支持 .read()
+        self._hang = hang
+        self._killed = False
+        self.killed = False
+
+    def wait(self, timeout=None):
+        # 已 kill 后视为已结束；否则 hang=True 模拟子进程卡死（任何 wait 都超时）
+        if self._killed:
+            return None
+        if self._hang:
+            raise subprocess.TimeoutExpired(cmd="x", timeout=timeout)
+        return None
+
+    def kill(self):
+        self._killed = True
+        self.killed = True
 
 
 def test_subprocess_validation_error_raises_validation(monkeypatch):
-    def fake_run(*a, **k):
-        return _FakeProc(returncode=1)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: _FakeProc(returncode=1))
     monkeypatch.setattr(
         "safety.sandbox._read_err_path",
         lambda p: {"error": "生成代码不允许 import。", "terminal": True},
@@ -58,10 +71,7 @@ def test_subprocess_validation_error_raises_validation(monkeypatch):
 
 
 def test_subprocess_runtime_error_mock(monkeypatch):
-    def fake_run(*a, **k):
-        return _FakeProc(returncode=1)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: _FakeProc(returncode=1))
     monkeypatch.setattr(
         "safety.sandbox._read_err_path",
         lambda p: {"error": "代码执行出错: x", "terminal": False},
@@ -71,13 +81,25 @@ def test_subprocess_runtime_error_mock(monkeypatch):
 
 
 def test_subprocess_timeout_raises_exec_error(monkeypatch):
-    def fake_run(*a, **k):
-        raise subprocess.TimeoutExpired(cmd="x", timeout=5.0)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: _FakeProc(hang=True))
     with pytest.raises(SandboxExecError) as ei:
         run_generated_code_subprocess("x", "f.csv", "csv", "pandas", timeout=5.0)
     assert "超时" in str(ei.value)
+
+
+def test_subprocess_cancel_kills_process(monkeypatch):
+    import threading
+
+    from agent.cancellation import CancellationError
+
+    proc = _FakeProc(hang=True)
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: proc)
+    event = threading.Event()
+    event.set()  # 已取消
+    with pytest.raises(CancellationError):
+        run_generated_code_subprocess("x", "f.csv", "csv", "pandas", timeout=30.0, cancel_event=event)
+    # 取消优先于超时：子进程被 kill
+    assert proc.killed is True
 
 
 import glob

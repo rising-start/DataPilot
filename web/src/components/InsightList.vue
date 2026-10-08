@@ -1,8 +1,14 @@
 <template>
   <el-card shadow="never">
-    <template #header>关键发现</template>
+    <template #header>
+      <el-icon class="card-icon"><Bulb /></el-icon>
+      <span>关键发现</span>
+    </template>
     <ul class="insights">
-      <li v-for="(item, index) in insights" :key="index">{{ item }}</li>
+      <li v-for="(item, index) in insights" :key="index">
+        <el-icon class="bullet"><MagicStick /></el-icon>
+        <span>{{ item }}</span>
+      </li>
     </ul>
     <el-divider />
     <h4>汇报结论</h4>
@@ -11,27 +17,48 @@
 </template>
 
 <script setup lang="ts">
+import { MagicStick } from '@element-plus/icons-vue'
+
 defineProps<{ insights: string[]; report: string }>()
 </script>
 
 <style scoped>
 .insights {
   margin: 0;
-  padding-left: 20px;
-  color: #303133;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text);
 }
 
 .insights li {
-  margin-bottom: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.bullet {
+  color: var(--color-primary);
+  font-size: 14px;
+  margin-top: 3px;
+  flex: 0 0 auto;
 }
 
 .report {
   margin: 0;
-  color: #303133;
+  color: var(--color-text);
   line-height: 1.7;
+  padding: 12px 14px;
+  background: var(--color-surface-2);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 h4 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
+  color: var(--color-text-2);
+  font-size: 13px;
+  font-weight: 600;
 }
 </style>

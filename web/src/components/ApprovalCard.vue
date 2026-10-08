@@ -1,12 +1,17 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="approval?.title || '执行审批'"
     width="60%"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :show-close="false"
   >
+    <template #header>
+      <div class="dialog-head">
+        <el-icon class="card-icon"><Cpu /></el-icon>
+        <span>{{ approval?.title || '执行审批' }}</span>
+      </div>
+    </template>
     <p class="tip">
       以下内容将在服务端执行（{{ language === 'sql' ? 'SQL' : 'Python 代码' }}），请确认后再批准。
     </p>
@@ -24,6 +29,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { Cpu } from '@element-plus/icons-vue'
 import type { Approval } from '../types'
 
 const props = defineProps<{ approval: Approval | null; busy: boolean }>()
@@ -43,6 +49,13 @@ const language = computed(() => props.approval?.language ?? 'python')
 </script>
 
 <style scoped>
+.dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
 .tip {
   margin: 0 0 12px;
   color: #606266;

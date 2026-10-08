@@ -29,3 +29,8 @@ export async function resumeTask(taskId: string, approved: boolean) {
   const { data } = await http.post(`/tasks/${taskId}/resume`, { approved })
   return data as { task_id: string; status: string }
 }
+
+export async function cancelTask(taskId: string) {
+  const { data } = await http.delete(`/tasks/${taskId}`)
+  return data as { deleted: boolean; cancelled?: boolean }
+}

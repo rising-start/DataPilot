@@ -1,0 +1,132 @@
+:root {
+  /* 品牌主色 */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-active: #3730a3;
+  --color-primary-soft: #eef0fe;
+
+  /* 语义色 */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* 中性色 */
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #fbfbfd;
+  --color-border: #ececf1;
+  --color-text: #1d2129;
+  --color-text-2: #646a73;
+  --color-text-3: #8f959e;
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(20, 23, 33, 0.04), 0 1px 3px rgba(20, 23, 33, 0.06);
+  --shadow-md: 0 6px 16px rgba(20, 23, 33, 0.08);
+  --shadow-lg: 0 12px 32px rgba(20, 23, 33, 0.12);
+
+  /* Element Plus 主题覆盖 */
+  --el-color-primary: #4f46e5;
+  --el-color-primary-light-3: #6f6bf0;
+  --el-color-primary-light-5: #908cec;
+  --el-color-primary-light-7: #b9b6f4;
+  --el-color-primary-light-8: #cfccf8;
+  --el-color-primary-light-9: #ecebfd;
+  --el-color-primary-dark-2: #3f3ac0;
+  --el-color-success: #16a34a;
+  --el-color-warning: #d97706;
+  --el-color-danger: #dc2626;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+  --el-font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 卡片统一风格 */
+.el-card {
+  border-radius: var(--radius-md);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.el-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.el-card__header {
+  font-weight: 600;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 卡片头部图标统一色 */
+.card-icon {
+  color: var(--color-primary);
+  font-size: 16px;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d8dae0;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c2c5cd;
+}
+
+/* 通用面板容器 */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 渐显动画 */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.35s ease both;
+}

@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import ast
 import re
+import time
 from typing import Any
 
 import pandas as pd
+
+from agent.cancellation import CancellationError
 
 from core.config import MAX_RESULT_ROWS
 
@@ -243,12 +246,15 @@ def run_generated_code_subprocess(
     source_type: str,
     executor_name: str,
     timeout: float,
+    cancel_event=None,
 ) -> pd.DataFrame:
     """在独立子进程中执行生成的代码，返回截断后的 DataFrame。
 
     成功 -> 返回 DataFrame；
     子进程校验失败 -> 抛 SandboxValidationError（terminal）；
     子进程运行期错误 / 超时 / 崩溃 -> 抛 SandboxExecError（可重试）。
+    执行期间轮询 `cancel_event`：一旦被取消，立即 kill 子进程并抛 CancellationError，
+    让上层把任务状态置为 cancelled。
     """
     import json
     import os
@@ -275,18 +281,37 @@ def run_generated_code_subprocess(
 
     try:
         try:
-            proc = subprocess.run(
+            proc = subprocess.Popen(
                 [sys.executable, "-m", "safety.code_runner", req_path, res_path, err_path],
-                timeout=timeout,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
             )
-        except subprocess.TimeoutExpired:
+            deadline = time.monotonic() + timeout
+            poll_interval = 0.2
+            while True:
+                try:
+                    proc.wait(timeout=poll_interval)
+                    break
+                except subprocess.TimeoutExpired:
+                    if cancel_event is not None and cancel_event.is_set():
+                        proc.kill()
+                        proc.wait()
+                        raise CancellationError("任务已取消") from None
+                    if time.monotonic() >= deadline:
+                        proc.kill()
+                        proc.wait()
+                        raise SandboxExecError(f"执行超时（>{timeout}s），已强制终止。") from None
+        except CancellationError:
+            raise
+        except subprocess.TimeoutExpired:  # pragma: no cover - 理论上已被上面的循环捕获
             raise SandboxExecError(f"执行超时（>{timeout}s），已强制终止。") from None
 
         if proc.returncode != 0:
             err = _read_err_path(err_path)
-            detail = (proc.stderr.decode("utf-8", "replace") if proc.stderr else "").strip()
+            # Popen 下 proc.stderr 是管道对象（非 bytes），进程已结束后读取即可
+            detail = ""
+            if proc.stderr is not None:
+                detail = proc.stderr.read().decode("utf-8", "replace").strip()
             if bool(err.get("terminal", False)):
                 msg = err.get("error", "代码校验失败。")
                 raise SandboxValidationError(msg + _stderr_suffix(detail))

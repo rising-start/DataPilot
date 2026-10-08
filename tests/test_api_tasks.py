@@ -218,3 +218,109 @@ def test_service_exception_marks_failed_without_stale_data(client, monkeypatch):
     assert view["status"] == "failed"
     assert view["error"] == "boom"
     assert view["rows"] == [] and view["approval"] is None
+
+
+def _wait_status(client, task_id, statuses, timeout=20):
+    for _ in range(timeout * 10):
+        resp = client.get(f"/api/tasks/{task_id}")
+        assert resp.status_code == 200
+        view = resp.json()
+        if view["status"] in statuses:
+            return view
+        time.sleep(0.1)
+    raise AssertionError(f"task did not reach one of {statuses}")
+
+
+def test_cancel_running_task_stops_execution(client, monkeypatch):
+    import agent.cancellation as cancellation_mod
+
+    # 让 generate 阶段变成「耗时且可被取消」，以便任务停留在 running 态
+    def slow_generate(self, state):
+        event = cancellation_mod.current_cancel_event()
+        for _ in range(100):
+            if event is not None and event.is_set():
+                raise cancellation_mod.CancellationError("任务已取消")
+            time.sleep(0.05)
+        return {"code": "result_df = df.head(2)", "kind": "pandas", "error": ""}
+
+    monkeypatch.setattr(FakeExecutor, "generate", slow_generate)
+
+    body = _upload(client)
+    task_id = client.post(
+        "/api/tasks", json={"file_id": body["file_id"], "question": "各渠道销售额"}
+    ).json()["task_id"]
+
+    # 任务仍在 running 时立即取消
+    resp = client.delete(f"/api/tasks/{task_id}")
+    assert resp.status_code == 200
+    assert resp.json().get("cancelled") is True
+
+    view = _wait_status(client, task_id, ("cancelled", "failed", "completed"))
+    # 取消应在当前步骤后真正生效：状态回到 cancelled，而非跑完 completed
+    assert view["status"] == "cancelled"
+    # 记录保留（取消语义不是删除），再次 DELETE 才彻底清理
+    assert client.get(f"/api/tasks/{task_id}").status_code == 200
+    assert client.delete(f"/api/tasks/{task_id}").status_code == 200
+    assert client.get(f"/api/tasks/{task_id}").status_code == 404
+
+
+def test_delete_on_terminal_task_still_cleans(client):
+    """终态任务（非 running）的 DELETE 保持原语义：彻底删除并清理临时文件。"""
+    import os
+
+    import server.api.tasks as tasks_api
+
+    body = _upload(client)
+    task_id = client.post(
+        "/api/tasks", json={"file_id": body["file_id"], "question": "各渠道销售额"}
+    ).json()["task_id"]
+    _wait_terminal(client, task_id)
+
+    record = tasks_api.STORE.get(task_id)
+    assert os.path.exists(record.file_path)
+
+    assert client.delete(f"/api/tasks/{task_id}").status_code == 200
+    assert not os.path.exists(record.file_path)
+
+
+def test_apply_cancel_precedence_overrides_completed():
+    """取消优先：即便 worker 跑出 completed，已置位的 cancel_event 也保持 cancelled。"""
+    import threading
+
+    import server.api.tasks as tasks_api
+    from server.task_store import TaskRecord
+    from service import RunResult
+
+    record = TaskRecord(
+        task_id="prec",
+        thread_id="",
+        status="completed",
+        result=RunResult(thread_id="t", status="completed", report="r"),
+    )
+    record.cancel_event = threading.Event()
+    record.cancel_event.set()
+
+    tasks_api._apply_cancel_precedence(record)
+
+    assert record.status == "cancelled"
+    assert record.result is None
+
+
+def test_apply_cancel_precedence_noop_when_not_cancelled():
+    """未取消时不应篡改终态。"""
+    import server.api.tasks as tasks_api
+    from server.task_store import TaskRecord
+    from service import RunResult
+
+    record = TaskRecord(
+        task_id="prec2",
+        thread_id="",
+        status="completed",
+        result=RunResult(thread_id="t", status="completed", report="r"),
+    )
+    record.cancel_event = None
+
+    tasks_api._apply_cancel_precedence(record)
+
+    assert record.status == "completed"
+    assert record.result is not None

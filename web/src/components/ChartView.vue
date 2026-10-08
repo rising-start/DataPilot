@@ -2,7 +2,8 @@
   <el-card v-if="option" shadow="never">
     <template #header>
       <div class="head">
-        <span>图表</span>
+        <el-icon class="card-icon"><PieChart /></el-icon>
+        <span>可视化</span>
         <ChartControls
           :spec="viewSpec"
           :rows="rows"
@@ -10,7 +11,10 @@
           @change="onPatch"
           @reset="onReset"
         />
-      </div>
+        <el-button size="small" :icon="Download" :disabled="!option" @click="downloadChart">
+          下载图片
+        </el-button>
+        </div>
     </template>
     <div ref="chartEl" class="chart"></div>
   </el-card>
@@ -18,11 +22,13 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import * as echarts from 'echarts'
+import * as echarts from '../utils/echartsCore'
 import { chartSpecToOption } from '../utils/echarts'
 import { applyChartEdit } from '../utils/chartColumns'
 import type { ChartPatch } from '../utils/chartColumns'
 import ChartControls from './ChartControls.vue'
+import { Download, PieChart } from '@element-plus/icons-vue'
+import { buildChartFileName } from '../utils/chartDownload'
 import type { ChartSpec, Row } from '../types'
 
 const props = defineProps<{ spec: ChartSpec; rows: Row[] }>()
@@ -84,6 +90,17 @@ function render() {
   chart.setOption(option.value, true)
 }
 
+function downloadChart() {
+  if (!chart) return
+  const url = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' })
+  const a = document.createElement('a')
+  a.href = url
+  a.download = buildChartFileName(viewSpec.value.title)
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 function onResize() {
   chart?.resize()
 }
@@ -112,6 +129,7 @@ onBeforeUnmount(() => {
 
 .chart {
   width: 100%;
-  height: 360px;
+  height: 400px;
+  animation: fadeUp 0.4s ease both;
 }
 </style>

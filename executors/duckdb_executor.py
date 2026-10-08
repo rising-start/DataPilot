@@ -1,6 +1,7 @@
 import json
 import os
 
+from agent.cancellation import run_blocking_with_cancel
 from analysis.summarize import summarize_result
 from core.sanitize import make_json_safe
 from executors.base import BaseExecutor, _input
@@ -128,26 +129,34 @@ class DuckDBExecutor(BaseExecutor):
         if source_type != "csv" or not file_path:
             return {"error": f"DuckDB executor only supports csv, got {source_type}", "terminal": True}
 
-        import duckdb
+        # 路径转义后拼入：反斜杠改正斜杠（避免 SQL 字符串转义），单引号转义（防注入）。
+        # 文件已落盘、路径由系统生成，不在 LLM 控制范围内。
+        safe_path = file_path.replace("\\", "/").replace("'", "''")
 
-        con = duckdb.connect()
-        try:
-            # 先设资源上限（内存/线程/超时），再读文件，避免单条查询拖垮进程
-            _apply_resource_limits(con)
-            # 路径转义后拼入：反斜杠改正斜杠（避免 SQL 字符串转义），单引号转义（防注入）。
-            # 文件已落盘、路径由系统生成，不在 LLM 控制范围内。
-            safe_path = file_path.replace("\\", "/").replace("'", "''")
-            # 物化为内存表（而非视图），以便随后可安全禁用外部访问：
-            # 否则查询视图会再次触发底层 read_csv_auto，被禁用策略阻断。
-            con.execute(f"CREATE TABLE data AS SELECT * FROM read_csv_auto('{safe_path}')")
-            # 纵深防御：锁死引擎级外部文件访问，用户 SQL 只能读已载入的 data 表，
-            # 即便 is_safe_sql 漏网（如 SELECT * FROM 'other.csv' 隐式读文件）也会被引擎拒绝。
-            _disable_duckdb_external_access(con)
-            result_df = con.execute(sql).df()
-        except Exception as e:
-            return {"error": f"DuckDB execution failed: {e}", "terminal": False}
-        finally:
-            con.close()
+        def _run() -> "pd.DataFrame":
+            # 连接在此线程内创建并使用：DuckDB 连接非线程安全，必须和查询在同一线程。
+            # 取消时 worker 立即返回 cancelled 并停止等待该守护线程，守护线程跑完当前查询后
+            # 由 finally 自行关闭连接并退出（DB 驱动不支持中断的固有限制）。
+            import duckdb
+
+            con = duckdb.connect()
+            try:
+                # 先设资源上限（内存/线程/超时），再读文件，避免单条查询拖垮进程
+                _apply_resource_limits(con)
+                # 物化为内存表（而非视图），以便随后可安全禁用外部访问：
+                # 否则查询视图会再次触发底层 read_csv_auto，被禁用策略阻断。
+                con.execute(f"CREATE TABLE data AS SELECT * FROM read_csv_auto('{safe_path}')")
+                # 纵深防御：锁死引擎级外部文件访问，用户 SQL 只能读已载入的 data 表，
+                # 即便 is_safe_sql 漏网（如 SELECT * FROM 'other.csv' 隐式读文件）也会被引擎拒绝。
+                _disable_duckdb_external_access(con)
+                return con.execute(sql).df()
+            finally:
+                con.close()
+
+        # 包一层取消：长查询可被取消信号中断。取消时 run_blocking_with_cancel 会
+        # 抛 CancellationError（BaseException），交由 execute_artifact_node 上浮到
+        # worker 置为 cancelled；不要在此 catch 成普通错误，否则会落入修复循环。
+        result_df = run_blocking_with_cancel(_run)
 
         result_df = normalize_result(result_df)
 

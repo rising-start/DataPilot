@@ -18,7 +18,7 @@ export interface Approval {
   language: 'sql' | 'python'
 }
 
-export type TaskStatus = 'running' | 'awaiting_approval' | 'completed' | 'failed'
+export type TaskStatus = 'running' | 'awaiting_approval' | 'completed' | 'failed' | 'cancelled'
 
 export interface TaskView {
   task_id: string

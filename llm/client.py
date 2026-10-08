@@ -2,14 +2,17 @@ import logging
 import os
 import random
 import re
+import threading
 import time
 from functools import lru_cache
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
+from agent.cancellation import CancellationError, current_cancel_event, run_blocking_with_cancel
 from core.config import (
     LLM_MAX_RETRIES,
+    LLM_REQUEST_TIMEOUT,
     LLM_RETRY_BASE_DELAY,
     LLM_RETRY_MAX_DELAY,
 )
@@ -107,11 +110,17 @@ def _backoff_delay(exc: BaseException, attempt: int) -> float:
 
 def _invoke_with_retry(messages: list[dict[str, str]]) -> str:
     last_error: BaseException | None = None
+    cancel_event = current_cancel_event()
 
     for attempt in range(LLM_MAX_RETRIES + 1):
+        # 每次重试前先看取消信号：被取消优先于任何网络重试
+        if cancel_event is not None and cancel_event.is_set():
+            raise CancellationError("任务已取消")
+
         try:
-            resp = get_llm().invoke(messages)
-            return resp.content if isinstance(resp.content, str) else str(resp.content)
+            return run_blocking_with_cancel(_invoke_blocking, messages)
+        except CancellationError:
+            raise
         except Exception as exc:
             last_error = exc
             if attempt >= LLM_MAX_RETRIES or not _is_retryable(exc):
@@ -141,7 +150,14 @@ def get_llm() -> ChatOpenAI:
         api_key=KIMI_API_KEY,
         base_url=KIMI_BASE_URL,
         temperature=1,
+        # 单次请求超时：即便没有取消信号，也避免 HTTP 请求无限挂起
+        request_timeout=LLM_REQUEST_TIMEOUT,
     )
+
+
+def _invoke_blocking(messages: list[dict[str, str]]) -> str:
+    resp = get_llm().invoke(messages)
+    return resp.content if isinstance(resp.content, str) else str(resp.content)
 
 
 def invoke_text(system_prompt: str, user_prompt: str) -> str:

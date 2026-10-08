@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from analysis.summarize import summarize_result
+from agent.cancellation import current_cancel_event
 from core.config import CODE_APPROVAL_ENABLED, CODE_EXEC_TIMEOUT
 from core.sanitize import make_json_safe
 from core.schema import build_schema_summary_for_llm
@@ -115,6 +116,7 @@ class CodeExecutor(BaseExecutor):
                 source_type=_input(state)["data_source_type"],
                 executor_name=self.name,
                 timeout=CODE_EXEC_TIMEOUT,
+                cancel_event=current_cancel_event(),
             )
         except SandboxValidationError as e:
             return {"error": str(e), "terminal": True}

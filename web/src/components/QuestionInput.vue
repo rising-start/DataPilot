@@ -1,10 +1,14 @@
 <template>
   <el-card shadow="never">
-    <template #header>业务问题</template>
+    <template #header>
+      <el-icon class="card-icon"><EditPen /></el-icon>
+      <span>分析问题</span>
+    </template>
     <el-input
       v-model="question"
       type="textarea"
-      :rows="2"
+      :rows="3"
+      resize="none"
       placeholder="例如：各渠道销售额排名，给我柱状图和结论。"
     />
     <div class="actions">
@@ -21,6 +25,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { EditPen } from '@element-plus/icons-vue'
 
 const props = defineProps<{
   fileId: string | null
@@ -54,7 +59,7 @@ function onFollowup() {
 
 <style scoped>
 .actions {
-  margin-top: 12px;
+  margin-top: 14px;
   display: flex;
   gap: 12px;
 }

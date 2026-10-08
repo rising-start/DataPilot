@@ -1,6 +1,9 @@
 <template>
   <el-card shadow="never">
-    <template #header>执行链路（{{ trace.length }} 步）</template>
+    <template #header>
+      <el-icon class="card-icon"><Connection /></el-icon>
+      <span>执行链路（{{ trace.length }} 步）</span>
+    </template>
     <el-collapse>
       <el-collapse-item
         v-for="(item, index) in trace"
@@ -18,15 +21,18 @@
 </template>
 
 <script setup lang="ts">
+import { Connection } from '@element-plus/icons-vue'
+
 defineProps<{ trace: Record<string, any>[] }>()
 </script>
 
 <style scoped>
 .detail {
   margin: 8px 0 0;
-  padding: 8px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   max-height: 240px;
   overflow: auto;

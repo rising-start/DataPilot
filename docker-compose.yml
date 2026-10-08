@@ -13,7 +13,27 @@ services:
       DASK_ROW_THRESHOLD: "50000"
       MAX_RESULT_ROWS: "200"
       DEFAULT_MAX_RETRIES: "1"
+      # 任务记录 + LangGraph checkpoint 持久化到 Redis（留空则用内存实现）
+      REDIS_URL: "redis://redis:6379/0"
     restart: unless-stopped
-    # 单副本：checkpoint 是 InMemorySaver，多副本之间不共享会话状态
+    depends_on:
+      - redis
+    # 单副本即可共享会话；如需多副本，需保证 UPLOADS 等也外置（见已知限制）
     deploy:
       replicas: 1
+
+  redis:
+    image: redis:7-alpine
+    container_name: datapilot-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - datapilot-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  datapilot-redis-data:

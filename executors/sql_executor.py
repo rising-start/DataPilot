@@ -1,5 +1,6 @@
 import json
 
+from agent.cancellation import run_blocking_with_cancel
 from analysis.summarize import summarize_result
 from core.sanitize import make_json_safe
 from executors.base import BaseExecutor, _input
@@ -72,11 +73,20 @@ class SQLExecutor(BaseExecutor):
             # 用户拒绝执行是终止信号，不是可修复的错误
             return {"error": "SQL execution not approved.", "terminal": True}
 
-        conn = get_sqlite_connection(_input(state)["file_path"])
-        try:
-            result_df = run_sql(conn, (state.get("artifact", {}) or {}).get("code", ""))
-        finally:
-            conn.close()
+        def _run() -> "pd.DataFrame":
+            # 连接在此线程内创建并使用：sqlite 连接不能跨线程（默认 check_same_thread），
+            # 必须和查询在同一线程。取消时 worker 会立即返回 cancelled 并停止等待该守护线程，
+            # 守护线程跑完当前查询后由 finally 自行关闭连接并退出（DB 驱动不支持中断的固有限制）。
+            conn = get_sqlite_connection(_input(state)["file_path"])
+            try:
+                return run_sql(conn, (state.get("artifact", {}) or {}).get("code", ""))
+            finally:
+                conn.close()
+
+        # 包一层取消：长查询可被取消信号中断。取消时 run_blocking_with_cancel 会
+        # 抛 CancellationError（BaseException），交由 execute_artifact_node 上浮到
+        # worker 置为 cancelled；不要在此 catch 成普通错误，否则会落入修复循环。
+        result_df = run_blocking_with_cancel(_run)
 
         result_df = normalize_result(result_df)
 

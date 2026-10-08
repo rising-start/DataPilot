@@ -70,6 +70,7 @@ docker compose down             # 停止
 | `CODE_EXEC_TIMEOUT` | 子进程执行代码的超时秒数，超时强制 kill | `30.0` |
 | `CODE_EXEC_MEM_LIMIT_MB` | 子进程虚拟内存上限（MB），仅 Linux 生效 | `1024` |
 | `CODE_EXEC_CPU_TIME` | 子进程 CPU 时间上限（秒），仅 Linux 生效 | `30` |
+| `LLM_REQUEST_TIMEOUT` | 单次 LLM HTTP 请求超时秒数，超时即报错（配合取消机制尽早返回） | `120.0` |
 | `DUCKDB_MEMORY_LIMIT` | DuckDB 单连接内存上限，防大查询 OOM | `2GB` |
 | `DUCKDB_THREADS` | DuckDB 单连接并发线程数，防 CPU 耗尽 | `4` |
 | `DUCKDB_STATEMENT_TIMEOUT` | DuckDB 单语句超时，防长查询挂死 | `30s` |
@@ -195,11 +196,16 @@ state["run"]["error"] / ["trace"] / ["run_logs"] / ["memory"] / ["terminal"]
 | POST | `/api/tasks` | 提交分析任务，立即返回 `task_id`（后台线程执行） |
 | GET | `/api/tasks/{task_id}` | 查询任务状态（SSE 订阅为主，此端点可作降级/手动查询） |
 | POST | `/api/tasks/{task_id}/resume` | 审批：`{"approved": true\|false}` |
-| DELETE | `/api/tasks/{task_id}` | 删除任务记录并清理其临时文件 |
+| DELETE | `/api/tasks/{task_id}` | running 态：置位取消事件并中断执行（状态置 `cancelled`，记录保留供前端展示）；其它态：删除记录并清理临时文件 |
 | GET | `/api/health` | 健康检查 |
 | GET | `/api/tasks/{task_id}/events` | SSE 流式推送状态（`text/event-stream`；`data:` 为 `{type:"update",view}` 或 `{type:"gone"}`） |
 
-**状态机**：`running → awaiting_approval → running → completed | failed`
+**状态机**：`running → awaiting_approval → running → completed | failed | cancelled`
+
+`cancelled` 表示任务在 running 态被用户取消：worker 通过 `TaskRecord.cancel_event`
+在节点入口 / LLM 调用 / 子进程等待 处轮询，发现即中断并把状态写回 `cancelled`；
+LLM 调用包了超时与取消感知的线程包装，子进程执行则轮询取消事件、置位即 kill。
+前端在 running 态显示「取消」按钮，调用 `DELETE` 并把状态置为 `cancelled`。
 
 **错误语义**：业务失败用 `status=failed` + `error` 表达，HTTP 仍返回 200；
 只有协议级问题才用状态码——`404`（任务/文件不存在）、`409`（任务不在待审批态，或没有可恢复的会话）。
@@ -398,9 +404,19 @@ python eval_runner.py
 
 ## 12. 已知限制
 
-- **单进程、单副本**：会话 checkpoint 用 `InMemorySaver`，进程重启即丢失，多副本之间不共享。
-  任务状态也在内存里。要横向扩展，需换成 `SqliteSaver`/Redis 并把 `TaskStore` 换成对应实现。
-- **任务不可取消**：`DELETE` 只删除记录与临时文件；已在跑的分析无法中断。
+- **持久化与多副本**：配置 `REDIS_URL` 后，LangGraph checkpoint（`RedisSaver`）、
+  任务记录（`RedisTaskStore`）、上传登记表（`RedisUploadStore`）三处都落到 Redis，
+  进程重启不丢会话、支持 `resume` 与多轮记忆，并可作为多副本共享基础；
+  未配置 `REDIS_URL` 时三处都回落为内存实现（单进程、重启即丢）。
+  - 跨进程取消：DELETE 跑到任意副本都会向 Redis 频道广播 `task_id`，真正持有 worker 的副本
+    置位其本地 `cancel_event` 中断执行（见 `RedisTaskStore.publish_cancel` / 订阅线程）。
+  - 上传文件**字节**仍在各副本本地临时目录：单主机多副本需把临时目录挂成共享卷，
+    否则多副本应改用对象存储；跨重启在单主机上文件已落盘、登记表已进 Redis，可直接找回。
+  - SSE 实时流是长连接，多副本部署需负载均衡开启**会话保持（sticky）**，否则客户端连到的副本
+    收不到本副本以外的状态推送。
+- **任务可取消（已支持）**：running 态点「取消」即 `DELETE`，worker 通过 `cancel_event`
+  在节点 / LLM / 子进程 处轮询中断，状态置为 `cancelled`；临时文件在对终态记录
+  再次 `DELETE` 时清理。awaiting_approval 态的 `DELETE` 仍是彻底删除（worker 已挂起）。
 - **无鉴权**：没有登录/权限/多租户，适合内网小团队使用。
 - **上传临时文件**：落在系统临时目录，`DELETE` 任务或重新上传时才清理；进程异常退出会残留。
 - **代码执行已在独立子进程**：带超时（默认 30s，可配 `CODE_EXEC_TIMEOUT`）与 Linux 内存/CPU 限额（见第 9 节）；Windows 仅超时兜底，生产建议部署在 Linux 以获得内存限制。

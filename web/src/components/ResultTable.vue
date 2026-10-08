@@ -1,6 +1,9 @@
 <template>
   <el-card v-if="rows.length" shadow="never">
-    <template #header>结果预览（{{ rows.length }} 行）</template>
+    <template #header>
+      <el-icon class="card-icon"><Grid /></el-icon>
+      <span>数据明细（{{ rows.length }} 行）</span>
+    </template>
     <el-table :data="rows" border stripe max-height="360" size="small">
       <el-table-column
         v-for="col in columns"
@@ -15,6 +18,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Grid } from '@element-plus/icons-vue'
 import type { Row } from '../types'
 
 const props = defineProps<{ rows: Row[] }>()
