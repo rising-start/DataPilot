@@ -177,7 +177,12 @@ export const useTaskStore = defineStore('task', () => {
 
     es.onerror = () => {
       cleanup()
-      if (task.value && task.value.status === 'running') {
+      // running 或 awaiting_approval 都视为活跃态：审批等待期间断流也必须降级轮询，
+      // 否则点批准后弹窗关闭却再无状态回流，结果页永不出现（表现为卡死）。
+      if (
+        task.value &&
+        (task.value.status === 'running' || task.value.status === 'awaiting_approval')
+      ) {
         startPolling()
         ElMessage.warning('实时连接中断，已切换为轮询模式。')
       }

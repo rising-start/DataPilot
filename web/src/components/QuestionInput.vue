@@ -45,7 +45,10 @@ function submit(followup: boolean) {
     ElMessage.warning('请先上传文件并输入问题。')
     return
   }
-  emit('submit', question.value.trim(), followup)
+  const text = question.value.trim()
+  emit('submit', text, followup)
+  // 发送后立即清空输入框，避免旧问题残留
+  question.value = ''
 }
 
 function onStart() {

@@ -39,7 +39,7 @@
       <ApprovalCard
         v-if="store.task?.status === 'awaiting_approval' && store.task.approval"
         :approval="store.task.approval"
-        :busy="busy"
+        :busy="deciding"
         @decide="onDecide"
       />
 
@@ -99,6 +99,9 @@ import type { TaskView } from '../types'
 const store = useTaskStore()
 const fileId = ref<string | null>(null)
 const fileName = ref('')
+// 仅在点击审批按钮后、等待后端确认期间禁用按钮；
+// 不能把 awaiting_approval 纳入 busy，否则 el-button 的 :loading 会直接禁用按钮、点击无反应。
+const deciding = ref(false)
 
 const busy = computed(() => store.task?.status === 'running' || store.task?.status === 'awaiting_approval')
 
@@ -153,10 +156,15 @@ function onDeleteHistory(taskId: string) {
 }
 
 async function onDecide(approved: boolean) {
+  deciding.value = true
   try {
     await store.decide(approved)
   } catch (e: any) {
-    ElMessage.error(`操作失败：${e?.message ?? e}`)
+    // 优先透出后端返回的 detail（如 "task is not awaiting approval"），便于诊断 409 等错误
+    const detail = e?.response?.data?.detail ?? e?.message ?? e
+    ElMessage.error(`操作失败：${detail}`)
+  } finally {
+    deciding.value = false
   }
 }
 

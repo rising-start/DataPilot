@@ -92,7 +92,11 @@ function render() {
 
 function downloadChart() {
   if (!chart) return
+  // 下载时隐藏 ECharts 内置 title，只保留纯图表；
+  // 页面显示保持原样，下载完再恢复。
+  chart.setOption({ title: { show: false } }, false)
   const url = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' })
+  chart.setOption({ title: { show: true } }, false)
   const a = document.createElement('a')
   a.href = url
   a.download = buildChartFileName(viewSpec.value.title)
