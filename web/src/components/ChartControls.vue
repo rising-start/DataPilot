@@ -54,8 +54,8 @@ const xOptions = computed(() => dimensionCandidates(props.rows))
 const yOptions = computed(() => metricCandidates(props.rows))
 const typeOptions = computed(() => chartTypeOptions(props.spec.chart_type))
 
-// 直方图由前端对数值列分箱，不消费 X 轴（见 utils/echarts.ts 的 hist 分支），
-// 此时开放 X 下拉会让客户以为改动无效
+
+
 const xDisabled = computed(() => !xOptions.value.length || props.spec.chart_type === 'hist')
 const xPlaceholder = computed(() => {
   if (props.spec.chart_type === 'hist') return '直方图不使用 X 轴'

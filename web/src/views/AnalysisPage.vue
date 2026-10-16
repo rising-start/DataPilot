@@ -54,10 +54,6 @@
             <template #label><el-icon><MagicStick /></el-icon> 关键发现</template>
             <InsightList :insights="store.task.insights" :report="store.task.report" />
           </el-tab-pane>
-          <el-tab-pane>
-            <template #label><el-icon><Connection /></el-icon> 执行链路</template>
-            <TraceTimeline :trace="store.task.trace" />
-          </el-tab-pane>
         </el-tabs>
       </div>
 
@@ -81,7 +77,6 @@ import {
   CircleClose,
   Grid,
   MagicStick,
-  Connection,
   DataAnalysis,
 } from '@element-plus/icons-vue'
 import ApprovalCard from '../components/ApprovalCard.vue'
@@ -92,7 +87,6 @@ import InsightList from '../components/InsightList.vue'
 import QuestionInput from '../components/QuestionInput.vue'
 import ResultTable from '../components/ResultTable.vue'
 import StepsProgress from '../components/StepsProgress.vue'
-import TraceTimeline from '../components/TraceTimeline.vue'
 import { useTaskStore } from '../stores/task'
 import type { TaskView } from '../types'
 
@@ -155,12 +149,12 @@ function onDeleteHistory(taskId: string) {
   store.deleteHistory(taskId)
 }
 
-async function onDecide(approved: boolean) {
+async function onDecide(approved: boolean, modifiedContent?: string | null) {
   deciding.value = true
   try {
-    await store.decide(approved)
+    await store.decide(approved, modifiedContent)
   } catch (e: any) {
-    // 优先透出后端返回的 detail（如 "task is not awaiting approval"），便于诊断 409 等错误
+    
     const detail = e?.response?.data?.detail ?? e?.message ?? e
     ElMessage.error(`操作失败：${detail}`)
   } finally {

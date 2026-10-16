@@ -6,9 +6,9 @@ import pandas as pd
 from core.files import detect_source_type
 from service import AnalysisService, RunResult
 
-# =========================
-# 1. 测试集
-# =========================
+
+
+
 TEST_CASES: list[dict[str, Any]] = [
     {
         "case_id": 1,
@@ -48,11 +48,11 @@ TEST_CASES: list[dict[str, Any]] = [
 ]
 
 
-# =========================
-# 2. 工具函数
-# =========================
+
+
+
 def resolve_data_file(filename: str) -> str:
-    """优先在当前目录找，再在 data/ 下找。"""
+    
     candidates = [
         Path(filename),
         Path.cwd() / filename,
@@ -73,7 +73,7 @@ def run_turn(
     memory: dict | None = None,
     max_resumes: int = 3,
 ) -> RunResult:
-    """评估环境自动批准审批中断，跑到没有待审批为止。"""
+    
     result = service.start_analysis(
         file_path, source_type, question, followup=followup, memory=memory
     )
@@ -133,9 +133,9 @@ def _failure_record(case: dict[str, Any], error: str) -> dict[str, Any]:
     }
 
 
-# =========================
-# 3. 单轮评估
-# =========================
+
+
+
 def run_single_turn_eval(service: AnalysisService, cases: list[dict[str, Any]]) -> pd.DataFrame:
     records: list[dict[str, Any]] = []
 
@@ -155,9 +155,9 @@ def run_single_turn_eval(service: AnalysisService, cases: list[dict[str, Any]]) 
     return pd.DataFrame(records)
 
 
-# =========================
-# 4. 多轮评估
-# =========================
+
+
+
 MULTI_TURN_CASES = [
     {
         "case_id": "M1",
@@ -226,9 +226,9 @@ def run_multi_turn_eval(service: AnalysisService, cases: list[dict[str, Any]]) -
     return pd.DataFrame(records)
 
 
-# =========================
-# 5. 主程序
-# =========================
+
+
+
 def main():
     service = AnalysisService()
 
@@ -259,4 +259,7 @@ def main():
 
 
 if __name__ == "__main__":
+    from core.logging_config import setup_logging
+
+    setup_logging()
     main()

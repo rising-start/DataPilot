@@ -3,7 +3,7 @@ import pandas as pd
 from agent.state import AgentState
 from agent.support.tracing import run_update
 from analysis.memory import extract_memory_from_result
-from analysis.report import build_report
+from analysis.report import build_llm_report, build_report
 from core.columns import is_stable_focus_dimension
 from core.config import MAX_FOCUS_ENTITIES
 from core.sanitize import make_json_safe
@@ -23,6 +23,14 @@ def report_node(state: AgentState) -> AgentState:
             result_df=result_df,
         )
 
+        
+        report = build_llm_report(
+            user_question=user_question,
+            analysis_plan=analysis_plan,
+            result_df=result_df,
+            fallback_report=report,
+        )
+
         new_memory = extract_memory_from_result(
             user_question=user_question,
             analysis_plan=analysis_plan,
@@ -36,8 +44,8 @@ def report_node(state: AgentState) -> AgentState:
         old_memory = dict(run_state.get("memory", {}))
         merged_memory = dict(old_memory)
 
-        # 空结果会产出一个全 None 的 last_result，此时保留上一轮结果，
-        # 否则“刚才那个地区”这类指代会失去依据
+        
+        
         if result_df.empty and old_memory.get("last_result"):
             merged_memory["last_result"] = old_memory["last_result"]
         else:

@@ -2,16 +2,12 @@ from typing import Annotated, Any, Literal, TypedDict
 
 
 def merge_group(old: dict[str, Any] | None, new: dict[str, Any] | None) -> dict[str, Any]:
-    """普通分组：浅合并，节点未返回的字段保留。"""
+    
     return {**(old or {}), **(new or {})}
 
 
 def merge_run(old: dict[str, Any] | None, new: dict[str, Any] | None) -> dict[str, Any]:
-    """RunState：浅合并，且 error 只要本次未显式设置就归零。
-
-    注意：LangGraph 只在节点返回了该分组时才调用 reducer，
-    因此每个节点都必须至少返回 run 分组（例如写 run_logs）。
-    """
+    
     merged = {**(old or {}), **(new or {})}
     merged["error"] = (new or {}).get("error", "")
     return merged

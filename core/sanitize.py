@@ -5,11 +5,11 @@ import pandas as pd
 
 
 def make_json_safe(obj):
-    # 1. None
+    
     if obj is None:
         return None
 
-    # 2. 先处理最基础的纯 Python 标量
+    
     if isinstance(obj, (str, int, bool)):
         return obj
 
@@ -18,7 +18,7 @@ def make_json_safe(obj):
             return None
         return obj
 
-    # 3. numpy 标量
+    
     if isinstance(obj, np.integer):
         return int(obj)
 
@@ -31,23 +31,23 @@ def make_json_safe(obj):
     if isinstance(obj, np.bool_):
         return bool(obj)
 
-    # 4. pandas 时间类型
+    
     if isinstance(obj, (pd.Timestamp, pd.Timedelta)):
         return str(obj)
 
-    # 5. numpy 数组：一定要在 pd.isna 前处理
+    
     if isinstance(obj, np.ndarray):
         return [make_json_safe(x) for x in obj.tolist()]
 
-    # 6. list / tuple / set
+    
     if isinstance(obj, (list, tuple, set)):
         return [make_json_safe(x) for x in obj]
 
-    # 7. dict：key 强制转字符串
+    
     if isinstance(obj, dict):
         return {str(k): make_json_safe(v) for k, v in obj.items()}
 
-    # 8. pandas 对象
+    
     if isinstance(obj, pd.DataFrame):
         return [make_json_safe(row) for row in obj.to_dict(orient="records")]
 
@@ -57,7 +57,7 @@ def make_json_safe(obj):
     if isinstance(obj, pd.Index):
         return [make_json_safe(x) for x in obj.tolist()]
 
-    # 9. 最后才处理“单个值”的缺失判断
+    
     try:
         na_result = pd.isna(obj)
         if isinstance(na_result, (bool, np.bool_)):
@@ -66,5 +66,5 @@ def make_json_safe(obj):
     except Exception:
         pass
 
-    # 10. 其他对象统一转字符串
+    
     return str(obj)

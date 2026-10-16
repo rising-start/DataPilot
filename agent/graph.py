@@ -35,12 +35,7 @@ from executors.registry import register_executor
 
 
 def _with_progress(fn, stage):
-    """节点包装：进入时先检查取消，再上报执行阶段（供 SSE 推送中间进度）。
-
-    取消检查放在节点入口：当前节点一旦结束，下一个节点进入前就会被拦下，
-    抛出 `CancellationError` 直达 worker 终态处理（状态置为 cancelled），
-    避免已取消的分析继续空跑 LLM / exec。
-    """
+    
     @wraps(fn)
     def wrapper(state, *args, **kwargs):
         if is_cancelled():
@@ -51,18 +46,14 @@ def _with_progress(fn, stage):
 
 
 def _resolve_checkpointer():
-    """按 REDIS_URL 选择持久化 checkpointer。
-
-    未配置或不可用 → InMemorySaver（单进程、重启丢会话）；
-    配置且可达 → RedisSaver（跨重启 / 多副本共享 LangGraph 状态，支持 resume 与多轮记忆）。
-    """
+    
     redis_url = os.getenv("REDIS_URL")
     if not redis_url:
         return InMemorySaver()
     try:
         from langgraph.checkpoint.redis import RedisSaver
 
-        # 兼容不同版本的 API：优先 from_conn_string，缺失时退到构造器传 client
+        
         try:
             saver = RedisSaver.from_conn_string(redis_url)
         except (AttributeError, TypeError):
@@ -70,12 +61,12 @@ def _resolve_checkpointer():
 
             saver = RedisSaver(_redis.Redis.from_url(redis_url))
 
-        # setup() 负责建索引/流，新版本可能已隐式完成
+        
         if hasattr(saver, "setup"):
             saver.setup()
         logger.info("使用 Redis checkpointer：%s", redis_url)
         return saver
-    except Exception as e:  # noqa: BLE001 - 回落内存，避免硬失败
+    except Exception as e:  
         logger.warning("Redis checkpointer 不可用（%s），回落 InMemorySaver", e)
         return InMemorySaver()
 

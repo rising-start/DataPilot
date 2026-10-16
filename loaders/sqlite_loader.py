@@ -5,15 +5,12 @@ import pandas as pd
 
 
 def _to_readonly_uri(file_path: str) -> str:
-    """把文件路径转成 sqlite 只读 URI，避免生成的 SQL 写入用户上传的数据库。
-
-    用 as_uri() 而不是手工拼接，保证路径里的空格 / # / ? 被正确转义。
-    """
+    
     return f"{Path(file_path).resolve().as_uri()}?mode=ro"
 
 
 def get_sqlite_connection(file_path: str) -> sqlite3.Connection:
-    """以只读方式打开 SQLite（调用方负责 close）。"""
+    
     return sqlite3.connect(_to_readonly_uri(file_path), uri=True)
 
 

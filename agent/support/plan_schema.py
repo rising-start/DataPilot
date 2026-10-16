@@ -11,14 +11,14 @@ def _as_str(value: Any) -> str:
 
 
 def _as_str_list(value: Any) -> list[str]:
-    # 只接受列表类输入；非列表（含裸字符串）直接视为空，避免把脏数据当维度/指标
+    
     if not isinstance(value, (list, tuple)):
         return []
     return [v for v in value if isinstance(v, str) and v.strip()]
 
 
 def coerce_plan(raw: Any) -> AnalysisPlan:
-    """把 LLM 返回的裸 dict 收敛成受校验的 AnalysisPlan。"""
+    
     if not isinstance(raw, dict):
         raw = {}
 

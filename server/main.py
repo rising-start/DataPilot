@@ -4,7 +4,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from core.logging_config import setup_logging
 from server.api.tasks import router
+
+
+setup_logging()
 
 app = FastAPI(title="DataPilot API")
 
@@ -18,7 +22,7 @@ app.add_middleware(
 
 app.include_router(router)
 
-# 前端构建产物存在时挂载（web/ 构建后才有 web/dist）；用绝对路径避免工作目录影响
+
 DIST_DIR = Path(__file__).resolve().parent.parent / "web" / "dist"
 if DIST_DIR.is_dir():
     app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="static")

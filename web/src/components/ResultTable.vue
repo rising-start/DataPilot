@@ -23,7 +23,7 @@ import type { Row } from '../types'
 
 const props = defineProps<{ rows: Row[] }>()
 
-// 取所有行的列并集，避免行之间字段不一致时丢列
+
 const columns = computed(() => {
   const keys = new Set<string>()
   props.rows.forEach((row) => Object.keys(row ?? {}).forEach((k) => keys.add(k)))

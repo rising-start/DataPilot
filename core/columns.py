@@ -23,10 +23,10 @@ PREFERRED_METRIC_ORDER = [
     "total_orders",
 ]
 
-# 不适合作为主指标的列
+
 WEAK_METRIC_COLUMNS = {"order_id", "customer_id", "refund_flag"}
 
-# 属于“易变维度”的关键词，不适合作为持续关注实体
+
 TRANSIENT_DIMENSION_KEYWORDS = (
     "channel",
     "month",
@@ -40,7 +40,7 @@ TRANSIENT_DIMENSION_KEYWORDS = (
 
 
 def pick_dimension_column(result_df: pd.DataFrame, analysis_plan: dict[str, Any]) -> str | None:
-    """优先用分析计划指定的维度，其次非数值列。"""
+    
     for dim in analysis_plan.get("dimensions", []) or []:
         if dim in result_df.columns:
             return dim
@@ -56,7 +56,7 @@ def pick_dimension_column(result_df: pd.DataFrame, analysis_plan: dict[str, Any]
 
 
 def pick_metric_column(result_df: pd.DataFrame, analysis_plan: dict[str, Any]) -> str | None:
-    """优先常见高价值指标，其次计划指定指标，最后数值列兜底。"""
+    
     numeric_cols = result_df.select_dtypes(include="number").columns.tolist()
     if not numeric_cols:
         return None
@@ -77,7 +77,7 @@ def pick_metric_column(result_df: pd.DataFrame, analysis_plan: dict[str, Any]) -
 
 
 def is_stable_focus_dimension(dim_col: str | None) -> bool:
-    """判断维度是否适合作为跨轮持续关注的实体。"""
+    
     if not dim_col:
         return False
 

@@ -34,16 +34,16 @@ class TaskRecord:
     file_path: str = ""
     result: RunResult | None = None
     error: str = ""
-    # 后端当前执行阶段（load/plan/generate/...），供 SSE 实时推送
+    
     stage: str = ""
-    # 每次发起新的执行（建任务 / resume）递增；过期线程的写回据此丢弃
+    
     epoch: int = 0
-    # 取消事件：任务 running 时由 DELETE 置位，worker 轮询以中断执行。
-    # 不进入 checkpoint（非可序列化对象），仅存活于进程内的 record 实例上。
+    
+    
     cancel_event: threading.Event | None = field(default=None)
 
     def merge_result(self, result: RunResult) -> None:
-        """把 service 返回的结果写回任务记录。"""
+        
         self.thread_id = result.thread_id
         self.status = result.status
         self.result = result
@@ -51,10 +51,7 @@ class TaskRecord:
 
 
 class InMemoryTaskStore:
-    """内存任务存储。
-
-    接口按 Redis 语义设计（get/set/delete/list），后续替换实现时路由无需改动。
-    """
+    
 
     def __init__(self) -> None:
         self._records: dict[str, TaskRecord] = {}
@@ -72,21 +69,21 @@ class InMemoryTaskStore:
         return list(self._records.values())
 
     def recover(self) -> int:
-        # 内存实现无遗留状态问题，无需恢复
+        
         return 0
 
     def publish_cancel(self, task_id: str) -> None:
-        # 单进程无需跨进程广播
+        
         return None
 
     def start_cancel_subscriber(self) -> None:
-        # 单进程无需订阅
+        
         return None
 
 
-# --------------------------------------------------------------------------- #
-# Redis 实现
-# --------------------------------------------------------------------------- #
+
+
+
 
 def _pending_to_dict(p: PendingApproval) -> dict:
     return {"kind": p.kind, "title": p.title, "content": p.content, "language": p.language}
@@ -114,7 +111,7 @@ def _result_to_dict(r: RunResult) -> dict:
 
 
 def _record_to_dict(rec: TaskRecord) -> dict:
-    # 注意：cancel_event 不序列化，仅存于进程内映射
+    
     return {
         "task_id": rec.task_id,
         "thread_id": rec.thread_id,
@@ -178,12 +175,7 @@ def _record_from_dict(d: dict, cancel_event: threading.Event | None) -> TaskReco
 
 
 class RedisTaskStore:
-    """以 Redis 为后端的任务存储。
-
-    写入：更新内存缓存（保持对象身份，满足 `is` 竞态校验）+ 镜像写 Redis（JSON）。
-    读取：优先内存缓存，未命中才回源 Redis（进程重启后首读即回填缓存）。
-    `cancel_event` 仅驻留内存映射，跨进程不传递（取消语义依赖同进程 worker）。
-    """
+    
 
     def __init__(self, url: str, ttl: int = 0) -> None:
         import redis
@@ -205,7 +197,7 @@ class RedisTaskStore:
         return rec
 
     def set(self, record: TaskRecord) -> None:
-        # 保存 / 还原 cancel_event（不进 Redis）
+        
         if record.cancel_event is not None:
             self._cancel_events[record.task_id] = record.cancel_event
         elif record.task_id in self._cancel_events:
@@ -235,10 +227,7 @@ class RedisTaskStore:
         return results
 
     def recover(self) -> int:
-        """启动恢复：把遗留的 running 任务（进程重启导致 worker 消失）标记为失败。
-
-        返回被修正的任务数。多副本各自启动时都会跑一遍，幂等。
-        """
+        
         fixed = 0
         for rec in self.list():
             if rec.status == "running":
@@ -251,24 +240,24 @@ class RedisTaskStore:
             logger.warning("RedisTaskStore 恢复 %d 个遗留 running 任务为 failed", fixed)
         return fixed
 
-    # ------------------------------------------------------------------ #
-    # 跨进程取消：DELETE 打到任意副本时，向频道广播 task_id；
-    # 真正持有 worker 的副本（其缓存里是带 cancel_event 的活对象）收到后
-    # 置位 cancel_event，中断执行。单进程部署下本地已直接置位，广播为冗余但无害。
-    # ------------------------------------------------------------------ #
+    
+    
+    
+    
+    
 
     def publish_cancel(self, task_id: str) -> None:
         try:
             self._client.publish(_CANCEL_CHANNEL, task_id)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  
             logger.warning("发布取消信号失败（%s）：%s", task_id, e)
 
     def _apply_remote_cancel(self, task_id: str) -> None:
         rec = self.get(task_id)
         if rec is None:
             return
-        # 仅当本副本持有该任务的活对象（带 worker 用的 cancel_event）时才置位；
-        # 否则只是别的副本的登记，无需动作。
+        
+        
         if rec.cancel_event is not None:
             rec.cancel_event.set()
 
@@ -293,21 +282,21 @@ class RedisTaskStore:
                     data = message.get("data")
                     task_id = data.decode() if isinstance(data, bytes) else str(data)
                     self._apply_remote_cancel(task_id)
-            except Exception as e:  # noqa: BLE001 - 断线后重连，避免静默失活
+            except Exception as e:  
                 logger.warning("Redis 取消订阅循环异常，2s 后重连：%s", e)
                 time.sleep(2)
 
 
 def get_task_store():
-    """按配置返回任务存储实现：有 REDIS_URL 且 redis 可用则 Redis，否则内存。"""
+    
     if not REDIS_URL:
         return InMemoryTaskStore()
     try:
         store = RedisTaskStore(REDIS_URL, ttl=REDIS_TASK_TTL)
-        # 探活：确保 Redis 真能连上，连不上就回落内存，避免运行时才炸
+        
         store._client.ping()
         logger.info("使用 Redis 任务存储：%s", REDIS_URL)
         return store
-    except Exception as e:  # noqa: BLE001 - 任何连接/导入问题都回落内存
+    except Exception as e:  
         logger.warning("Redis 不可用（%s），回落内存任务存储", e)
         return InMemoryTaskStore()

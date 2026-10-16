@@ -47,7 +47,7 @@ function submit(followup: boolean) {
   }
   const text = question.value.trim()
   emit('submit', text, followup)
-  // 发送后立即清空输入框，避免旧问题残留
+  
   question.value = ''
 }
 

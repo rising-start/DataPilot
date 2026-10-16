@@ -1,4 +1,4 @@
-// 文件名中的非法字符（跨 Windows / Unix）：\ / : * ? " < > | 及控制字符
+
 const ILLEGAL = /[\\/:*?"<>|\x00-\x1f]/g
 
 export function buildChartFileName(title: string, now: number = Date.now()): string {

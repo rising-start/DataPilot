@@ -35,10 +35,7 @@ def run_update(
     detail: dict[str, Any] | None = None,
     **extra: Any,
 ) -> dict[str, Any]:
-    """统一构造 run 分组更新。
-
-    每个节点都必须返回 run 分组，否则 merge_run 不会触发，error 也就不会归零。
-    """
+    
     payload: dict[str, Any] = {
         "run_logs": append_log(state, message),
         "trace": append_trace(state, stage, status, detail),

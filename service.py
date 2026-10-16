@@ -22,7 +22,7 @@ class PendingApproval:
 @dataclass
 class RunResult:
     thread_id: str
-    status: str  # completed | awaiting_approval | failed
+    status: str  
     tool: str = ""
     plan: dict[str, Any] = field(default_factory=dict)
     pending: PendingApproval | None = None
@@ -122,7 +122,7 @@ class AnalysisService:
         memory: dict | None = None,
         task_id: str | None = None,
     ) -> RunResult:
-        # 新一轮分析使用新 thread，避免复用上一轮 checkpoint 的状态
+        
         thread_id = str(uuid.uuid4())
         state: dict[str, Any] = {
             "input": {
@@ -136,7 +136,7 @@ class AnalysisService:
         }
         if followup and memory:
             state["run"]["memory"] = memory
-        # task_id 写入状态（可序列化），节点据此从进度注册表取回调上报阶段
+        
         if task_id is not None:
             state["run"]["task_id"] = task_id
 
@@ -147,11 +147,16 @@ class AnalysisService:
         self,
         thread_id: str,
         approved: bool,
+        modified_content: str | None = None,
         task_id: str | None = None,
     ) -> RunResult:
-        cmd = Command(resume=approved)
+        
+        
+        decision = {"approved": approved, "code": modified_content}
         if task_id is not None:
-            # task_id 重新注入（首次分析时已存入 checkpoint，这里兜底覆盖）
-            cmd = Command(resume=approved, update={"run": {"task_id": task_id}})
+            
+            cmd = Command(resume=decision, update={"run": {"task_id": task_id}})
+        else:
+            cmd = Command(resume=decision)
         raw = self._graph.invoke(cmd, config=self._config(thread_id))
         return _to_result(thread_id, raw)

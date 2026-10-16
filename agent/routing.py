@@ -18,7 +18,7 @@ def _execution(state: AgentState) -> dict:
 
 
 def after_load_data(state: AgentState) -> str:
-    """load_data → plan_analysis 之间必须有条件边，否则加载失败会被后续节点清零。"""
+    
     if _run(state).get("error"):
         return "error"
     return "plan_analysis"
@@ -49,7 +49,7 @@ def after_approval(state: AgentState) -> str:
 def after_execute_artifact(state: AgentState) -> str:
     run = _run(state)
     if run.get("error"):
-        # 用户拒绝执行等终止性错误不再重试，否则会再次生成并重新请求审批
+        
         if run.get("terminal", False):
             return "error"
         if _execution(state).get("retry_count", 0) < _execution(state).get("max_retries", 1):

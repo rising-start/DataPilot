@@ -44,7 +44,7 @@ def plan_analysis_node(state: AgentState) -> AgentState:
         selected_tool = choose_tool(data_source_type, plan, state)
 
         if selected_tool == "none":
-            # 必须显式写 error，否则 error 节点拿到空 error，最终状态会被误判为成功
+            
             return make_json_safe(run_update(
                 state,
                 f"No executor available for data source: {data_source_type}.",

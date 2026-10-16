@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 
 KIMI_API_KEY = os.getenv("KIMI_API_KEY")
 KIMI_BASE_URL = os.getenv("KIMI_BASE_URL", "https://api.moonshot.cn/v1")
-# 模型名随平台上下架会变，务必用 KIMI_MODEL 覆盖为当前账号可用的模型
-# （可选：kimi-k2-0905-preview / moonshot-v1-32k / moonshot-v1-128k）
+
+
 KIMI_MODEL = os.getenv("KIMI_MODEL", "kimi-k3")
 
-# 可重试的 HTTP 状态码：限流 + 服务端临时故障
+
 _RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
-# 拿不到状态码时按异常类名兜底判断（不硬依赖 openai 包）
+
 _RETRYABLE_EXC_NAMES = {
     "RateLimitError",
     "InternalServerError",
@@ -48,7 +48,7 @@ _RETRYABLE_TEXT_HINTS = (
     "timed out",
     "timeout",
 )
-# 匹配 "please try again after 1 seconds" / "Retry-After: 3" 这类文案
+
 _RETRY_AFTER_RE = re.compile(
     r"(?:try again after|retry after|retry-after|please retry)\s*[:=]?\s*(\d+(?:\.\d+)?)",
     re.IGNORECASE,
@@ -64,7 +64,7 @@ def _status_code(exc: BaseException) -> int | None:
 
 
 def _suggested_delay(exc: BaseException) -> float | None:
-    """从 Retry-After 头或错误文案里提取服务端建议的等待秒数。"""
+    
     headers = getattr(getattr(exc, "response", None), "headers", None)
     if headers and hasattr(headers, "get"):
         for key in ("retry-after", "Retry-After", "retry-after-ms"):
@@ -101,7 +101,7 @@ def _sleep(seconds: float) -> None:
 
 
 def _backoff_delay(exc: BaseException, attempt: int) -> float:
-    """attempt 从 1 开始：指数退避 + 抖动，并尊重服务端建议的等待时间。"""
+    
     suggested = _suggested_delay(exc) or 0.0
     exponential = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1))
     delay = max(exponential, suggested)
@@ -113,7 +113,7 @@ def _invoke_with_retry(messages: list[dict[str, str]]) -> str:
     cancel_event = current_cancel_event()
 
     for attempt in range(LLM_MAX_RETRIES + 1):
-        # 每次重试前先看取消信号：被取消优先于任何网络重试
+        
         if cancel_event is not None and cancel_event.is_set():
             raise CancellationError("任务已取消")
 
@@ -137,7 +137,7 @@ def _invoke_with_retry(messages: list[dict[str, str]]) -> str:
             )
             _sleep(delay)
 
-    raise last_error  # pragma: no cover - 循环内必然 return 或 raise
+    raise last_error  
 
 
 @lru_cache(maxsize=1)
@@ -150,7 +150,7 @@ def get_llm() -> ChatOpenAI:
         api_key=KIMI_API_KEY,
         base_url=KIMI_BASE_URL,
         temperature=1,
-        # 单次请求超时：即便没有取消信号，也避免 HTTP 请求无限挂起
+        
         request_timeout=LLM_REQUEST_TIMEOUT,
     )
 

@@ -44,11 +44,11 @@ function sameSeries(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((value, i) => value === b[i])
 }
 
-// AI 产出的 spec 作为默认值；viewSpec 是客户编辑后的渲染依据，不回传后端
+
 const viewSpec = ref<ChartSpec>(cloneSpec(props.spec))
 const option = computed(() => chartSpecToOption(viewSpec.value, props.rows))
-// series 也要参与比较：改 Y 会把 series 折叠为单元素，
-// 若只看 x/y/chart_type，改回原值时会被判为「未修改」而让多出来的系列无法恢复
+
+
 const isDirty = computed(
   () =>
     viewSpec.value.x !== props.spec.x ||
@@ -92,8 +92,8 @@ function render() {
 
 function downloadChart() {
   if (!chart) return
-  // 下载时隐藏 ECharts 内置 title，只保留纯图表；
-  // 页面显示保持原样，下载完再恢复。
+  
+  
   chart.setOption({ title: { show: false } }, false)
   const url = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' })
   chart.setOption({ title: { show: true } }, false)

@@ -56,7 +56,7 @@ def extract_memory_from_result(
         "result_preview": make_json_safe(result_df.head(5).to_dict(orient="records")),
     }
 
-    # 1. filters 里明确写出的稳定实体，优先进入 focus
+    
     for k, v in filters.items():
         if (
             isinstance(v, (str, int, float))
@@ -65,8 +65,8 @@ def extract_memory_from_result(
         ):
             memory["focus_entities"][str(k)] = v
 
-    # 2. 如果没有明确 filters，但当前主维度本身是稳定维度，
-    #    且 top_value 存在，则强制把 top_value 写进 focus
+    
+    
     if (
         dim_col
         and is_stable_focus_dimension(dim_col)

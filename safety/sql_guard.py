@@ -35,7 +35,7 @@ def is_safe_sql(sql: str) -> tuple[bool, str]:
     sql = clean_sql(sql)
     normalized = sql.strip().lower()
 
-    # 允许 SELECT 和 WITH
+    
     if not (normalized.startswith("select") or normalized.startswith("with")):
         return False, "Only SELECT is allowed."
 
@@ -43,8 +43,8 @@ def is_safe_sql(sql: str) -> tuple[bool, str]:
         if re.search(rf"\b{keyword}\b", normalized):
             return False, f"Forbidden keyword detected: {keyword}"
 
-    # 禁止文件读取表函数（DuckDB 等引擎可借此读取任意系统文件）。
-    # 普通列名（如 read_count）不含这些函数名，不会误伤。
+    
+    
     file_read_funcs = (
         "read_csv", "read_csv_auto", "read_parquet", "read_json",
         "read_json_auto", "read_excel", "read_blob",

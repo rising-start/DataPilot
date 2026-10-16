@@ -25,8 +25,15 @@ export async function getTask(taskId: string) {
   return data as TaskView
 }
 
-export async function resumeTask(taskId: string, approved: boolean) {
-  const { data } = await http.post(`/tasks/${taskId}/resume`, { approved })
+export async function resumeTask(
+  taskId: string,
+  approved: boolean,
+  modifiedContent?: string | null,
+) {
+  const { data } = await http.post(`/tasks/${taskId}/resume`, {
+    approved,
+    modified_content: modifiedContent ?? null,
+  })
   return data as { task_id: string; status: string }
 }
 

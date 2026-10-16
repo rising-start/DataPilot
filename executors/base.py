@@ -24,7 +24,7 @@ class BaseExecutor(ABC):
     name: str = "base"
 
     def __init__(self, generator_prompt: str = "", repair_prompt: str = "", artifact_kind: str = ""):
-        # prompt 由外部注入，避免执行器反向依赖 agent.prompts
+        
         self.generator_prompt = generator_prompt
         self.repair_prompt = repair_prompt
         self.artifact_kind = artifact_kind
@@ -35,7 +35,7 @@ class BaseExecutor(ABC):
 
     @abstractmethod
     def generate(self, state: dict) -> dict[str, Any]:
-        """返回 {"code": str, "error": str}（可选 terminal）。"""
+        
         raise NotImplementedError
 
     def needs_approval(self, state: dict) -> bool:
@@ -57,12 +57,12 @@ class BaseExecutor(ABC):
 
     @abstractmethod
     def execute(self, state: dict) -> dict[str, Any]:
-        """返回 {"rows": list, "summary": dict, "error": str, "terminal": bool}。"""
+        
         raise NotImplementedError
 
 
 class CodeExecutor(BaseExecutor):
-    """生成并执行 Python 代码的执行器模板（pandas / dask 共用）。"""
+    
 
     @abstractmethod
     def load_frame(self, state: dict):
@@ -105,7 +105,7 @@ class CodeExecutor(BaseExecutor):
 
     def execute(self, state: dict) -> dict[str, Any]:
         artifact = state.get("artifact", {}) or {}
-        # 需要审批但被拒绝 = 终止性错误，不能继续 exec（与 SQL 执行器行为一致）
+        
         if artifact.get("approval_required", False) and not artifact.get("approved", False):
             return {"error": "Code execution not approved.", "terminal": True}
 

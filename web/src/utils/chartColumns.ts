@@ -64,8 +64,8 @@ export function applyChartEdit(spec: ChartSpec, patch: ChartPatch): ChartSpec {
   if (patch.x !== undefined) next.x = patch.x
   if (patch.y !== undefined) {
     next.y = patch.y
-    // y 为空时保留原 series：清空 series 会让 chartSpecToOption 返回 null，
-    // 整张图连同卡片头部的控件一起消失，客户将无法再改回来
+    
+    
     if (next.y) next.series = [next.y]
   }
   if (patch.chart_type !== undefined) next.chart_type = patch.chart_type

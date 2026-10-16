@@ -6,16 +6,16 @@ class Approval(BaseModel):
     kind: str = ""
     title: str = ""
     content: str = ""
-    language: str = "python"  # sql | python
+    language: str = "python"  
 
 
 class TaskView(BaseModel):
-    """与 service.RunResult 字段一一对应，供前端消费。"""
+    
 
     task_id: str
     thread_id: str
-    status: str = "running"  # running | awaiting_approval | completed | failed
-    stage: str = ""  # 后端执行阶段（load/plan/...），供前端展示中间进度
+    status: str = "running"  
+    stage: str = ""  
     tool: str = ""
     plan: dict = Field(default_factory=dict)
     approval: Approval | None = None
@@ -40,3 +40,4 @@ class CreateTaskRequest(BaseModel):
 
 class ResumeRequest(BaseModel):
     approved: bool
+    modified_content: str | None = None  

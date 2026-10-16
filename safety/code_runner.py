@@ -12,7 +12,7 @@ from safety.sandbox import SandboxValidationError, _execute_code_impl
 
 try:
     import resource
-except ImportError:  # Windows 无此模块
+except ImportError:  
     resource = None
 
 
@@ -46,12 +46,12 @@ def _extra_vars(executor_name: str) -> dict:
 
 
 def _classify(exc: Exception) -> bool:
-    """静态校验失败（SandboxValidationError）视为终止性；其余（含运行期/归一化错误）可重试。"""
+    
     return isinstance(exc, SandboxValidationError)
 
 
 def run(req: dict, res_path: str, err_path: str) -> int:
-    """执行请求，写结果/错误文件，返回退出码（0 成功 / 非 0 失败）。"""
+    
     import pickle
     try:
         _apply_resource_limits()
@@ -62,7 +62,7 @@ def run(req: dict, res_path: str, err_path: str) -> int:
         with open(res_path, "wb") as f:
             pickle.dump(result_df, f)
         return 0
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  
         with open(err_path, "w", encoding="utf-8") as f:
             json.dump(
                 {"error": str(exc), "terminal": _classify(exc)},

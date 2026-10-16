@@ -20,11 +20,7 @@ class UploadedFile:
 
 
 class UploadStore:
-    """上传文件登记表：file_id -> 临时路径（内存实现）。
-
-    多轮追问会复用同一个 file_id，因此任务到达终态时不得删除临时文件；
-    只在 DELETE 任务或重新上传时清理。
-    """
+    
 
     def __init__(self) -> None:
         self._files: dict[str, UploadedFile] = {}
@@ -49,11 +45,11 @@ class UploadStore:
             delete_temp_file(uploaded.path)
 
 
-# --------------------------------------------------------------------------- #
-# Redis 实现：文件字节仍在本地临时目录，这里只外置「file_id -> 元数据」登记表，
-# 使进程重启 / 多副本能通过 file_id 找回已上传文件（前提是临时目录跨副本共享，
-# 如挂载同一卷；否则多副本仍需改为对象存储）。
-# --------------------------------------------------------------------------- #
+
+
+
+
+
 
 class RedisUploadStore:
     def __init__(self, url: str) -> None:
@@ -111,7 +107,7 @@ class RedisUploadStore:
 
 
 def get_upload_store():
-    """按配置返回上传登记表实现：有 REDIS_URL 且可用则 Redis，否则内存。"""
+    
     if not REDIS_URL:
         return UploadStore()
     try:
@@ -119,7 +115,7 @@ def get_upload_store():
         store._client.ping()
         logger.info("使用 Redis 上传登记表：%s", REDIS_URL)
         return store
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  
         logger.warning("Redis 不可用（%s），回落内存上传登记表", e)
         return UploadStore()
 

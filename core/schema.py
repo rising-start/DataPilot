@@ -6,7 +6,7 @@ from core.sanitize import make_json_safe
 
 
 def build_schema_summary_for_llm(state: dict[str, Any]) -> dict[str, Any]:
-    """给 LLM 使用的 schema 摘要（agent 与 executor 共用）。"""
+    
     data_input = state.get("input", {}) or {}
     dataset = state.get("dataset", {}) or {}
 

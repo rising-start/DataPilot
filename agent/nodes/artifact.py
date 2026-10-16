@@ -7,7 +7,7 @@ from executors.registry import get_executor
 
 
 def _artifact_result(state: AgentState, executor, result: dict, stage: str) -> dict[str, Any]:
-    """把 executor 返回的产物字段包进 artifact 分组，并补充审批信息。"""
+    
     artifact = dict(state.get("artifact", {}))
     artifact.update({k: v for k, v in result.items() if k in {"code", "kind"}})
 
@@ -18,8 +18,8 @@ def _artifact_result(state: AgentState, executor, result: dict, stage: str) -> d
 
     update: dict[str, Any] = {"artifact": artifact}
 
-    # retry_count 必须落在 execution 分组：路由在 after_execute_artifact 里读它，
-    # 放进 run 分组会导致计数永远不递增，修复循环无法终止
+    
+    
     if "retry_count" in result:
         update["execution"] = {"retry_count": result["retry_count"]}
 

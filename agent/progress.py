@@ -7,7 +7,7 @@
 """
 from collections.abc import Callable
 
-# task_id -> 进度回调（运行时注册，进程内有效；任务终态后清理）
+
 _REGISTRY: dict[str, Callable[[str], None]] = {}
 
 
@@ -20,11 +20,7 @@ def unregister_progress(task_id: str) -> None:
 
 
 def report_progress(state: dict, stage: str) -> None:
-    """节点进入时调用，凭 task_id 从注册表取出回调并上报当前阶段。
-
-    `state` 是 LangGraph 传给节点的状态字典；`task_id` 由 service 在发起
-    分析时写入 `run["task_id"]`（可序列化字符串）。
-    """
+    
     run = state.get("run") if isinstance(state, dict) else None
     if not isinstance(run, dict):
         return

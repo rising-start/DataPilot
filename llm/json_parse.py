@@ -4,7 +4,7 @@ from typing import Any
 
 
 def extract_json_object(text: str) -> dict[str, Any]:
-    """从 LLM 输出中提取 JSON 对象，所有分支都做兜底，保证返回 dict。"""
+    
     text = (text or "").strip()
 
     candidates = [text]
@@ -32,7 +32,7 @@ def _try_loads(text: str) -> Any:
     except Exception:
         pass
 
-    # LLM 常见的尾逗号问题，做一次轻量修复后再试
+    
     try:
         return json.loads(re.sub(r",\s*([}\]])", r"\1", text))
     except Exception:

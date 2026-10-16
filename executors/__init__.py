@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def init_executors() -> None:
-    """注册执行器；prompt 由这里注入，执行器本身不依赖 agent.prompts。"""
+    
     from agent.prompts import (
         DASK_GENERATOR_PROMPT,
         DASK_REPAIR_PROMPT,
@@ -31,10 +31,10 @@ def init_executors() -> None:
         artifact_kind="pandas",
     ))
 
-    # dask 是可选依赖：未安装时只禁用 dask 执行器，不影响 pandas / sql
-    # 注意：dask_executor 内部是惰性导入，必须先真正 import dask 才能判断可用性
+    
+    
     try:
-        import dask.dataframe  # noqa: F401
+        import dask.dataframe  
 
         from executors.dask_executor import DaskExecutor
 
@@ -46,9 +46,9 @@ def init_executors() -> None:
     except ImportError as e:
         logger.warning("Dask executor disabled: %s", e)
 
-    # duckdb 是可选依赖：未安装时只禁用 duckdb 执行器，不影响 pandas / sql
+    
     try:
-        import duckdb  # noqa: F401
+        import duckdb  
 
         from executors.duckdb_executor import DuckDBExecutor
 

@@ -82,13 +82,13 @@ export const useTaskStore = defineStore('task', () => {
     saveHistory(history.value)
   }
 
-  // 从本地历史恢复一个已完成任务的快照（只读查看）。
-  // 注意：不要关闭正在运行的实时 SSE——否则会静默丢失该任务的最终结果。
+  
+  
   function loadHistoryView(view: TaskView) {
     task.value = view
   }
 
-  // 统一清理实时通道：关闭 SSE 连接并停止轮询定时器
+  
   function cleanup() {
     connected.value = false
     if (es) {
@@ -101,7 +101,7 @@ export const useTaskStore = defineStore('task', () => {
     }
   }
 
-  // SSE 不可用时的降级：周期性拉取任务最新状态，直至终态或用户离开
+  
   function startPolling() {
     if (!task.value) return
     const id = task.value.task_id
@@ -127,7 +127,7 @@ export const useTaskStore = defineStore('task', () => {
     cleanup()
   }
 
-  // 组件卸载时调用：彻底断开实时通道（SSE + 轮询），避免连接泄漏
+  
   function stopPolling() {
     cleanup()
   }
@@ -158,7 +158,7 @@ export const useTaskStore = defineStore('task', () => {
         const cur = task.value
         if (!cur) return
         if (cur.task_id !== msg.view.task_id) {
-          // 正在查看其它历史记录时，仍把实时任务的更新写入历史，但不覆盖当前展示的卡片
+          
           updateHistory(msg.view.task_id, { status: msg.view.status, view: msg.view })
           return
         }
@@ -177,8 +177,8 @@ export const useTaskStore = defineStore('task', () => {
 
     es.onerror = () => {
       cleanup()
-      // running 或 awaiting_approval 都视为活跃态：审批等待期间断流也必须降级轮询，
-      // 否则点批准后弹窗关闭却再无状态回流，结果页永不出现（表现为卡死）。
+      
+      
       if (
         task.value &&
         (task.value.status === 'running' || task.value.status === 'awaiting_approval')
@@ -208,10 +208,10 @@ export const useTaskStore = defineStore('task', () => {
     startStreaming()
   }
 
-  async function decide(approved: boolean) {
+  async function decide(approved: boolean, modifiedContent?: string | null) {
     const t = task.value
     if (!t) return
-    await resumeTask(t.task_id, approved)
+    await resumeTask(t.task_id, approved, modifiedContent)
     task.value = { ...t, status: 'running' }
     updateHistory(t.task_id, { status: 'running' })
   }
@@ -224,7 +224,7 @@ export const useTaskStore = defineStore('task', () => {
     try {
       await cancelTask(id)
     } catch {
-      // 取消失败（如任务已结束被删）不阻塞 UI；以 SSE 最终状态为准
+      
     }
   }
 
