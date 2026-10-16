@@ -8,7 +8,7 @@
 
 </div>
 
-> ⚠️ **使用前必须配置 API Key**：本项目调用大模型（默认 Moonshot Kimi）需要密钥才能运行。请先复制 `.env.example` 为 `.env`，并填入你自己的 `KIMI_API_KEY`，否则服务启动后会因缺少密钥而报错。
+> ⚠️ **使用前必须配置 API Key**：本项目调用大模型需要密钥才能运行。请先复制 `.env.example` 为 `.env`，并填入你自己的 密钥，否则服务启动后会因缺少密钥而报错。
 > 密钥仅保存在本地 `.env` 文件中，且已被 `.gitignore` 忽略，**不会**被提交或上传到 GitHub；仓库内的 `.env.example` 仅为模板，`KIMI_API_KEY` 留空。
 
 ---
